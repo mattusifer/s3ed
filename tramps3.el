@@ -3,16 +3,6 @@
 
 ;; utility functions
 
-(defun string/starts-with (s prefix)
-  "Return non-nil if string s starts with prefix."
-      (cond ((>= (length s) (length prefix))
-             (string-equal (substring s 0 (length prefix)) prefix))
-            (t nil)))
-
-(defun is-s3-path (path)
-  "Confirm that this path is a valid s3 path"
-  (string/starts-with path "s3"))
-
 (defun tramps3-completing-read-backspace (cur-base)
   "Adjust normal completing-read behavior - go up to parent directory 
 when backspace is pressed at the beginning of the string"
@@ -69,14 +59,10 @@ when backspace is pressed at the beginning of the string"
                                (mapconcat 'identity (butlast (nthcdr 2 (split-string s3-path "/"))) "/"))))
 
           ;; create tmp dir
-          (make-directory tmp-dir t)
+          (mkdir tmp-dir)
 
-          ;; copy file from aws (if this is a file)
-          (if (not (string-match "/\\'" tmp-path))
-              (shell-command (format "aws s3 cp %s %s" s3-path tmp-path)))
-
-          ;; use original find-file on tmp file
-          (find-file tmp-path)
+          ;; open file or directory (in dired)
+          (tramps3-open-file tmp-path)
 
           (tramps3-mode))
       (message "S3 path is required"))))
@@ -84,5 +70,3 @@ when backspace is pressed at the beginning of the string"
 (provide 'tramps3)
 
 ;; (global-set-key (kbd "C-c C-s C-f") 'tramps3-find-file)
-
-
