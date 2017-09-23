@@ -13,16 +13,20 @@
 (defun tramps3-after-save-hook ()
   "Push changes to s3 after save"
   (when (is-tramps3-mode-active)
-    (s3-cp (buffer-file-name) (buffer-s3-path))))
+    (tramps3-s3-cp (buffer-file-name) (tramps3-buffer-s3-path))))
 (add-hook 'after-save-hook 'tramps3-after-save-hook)
 
 (defun tramps3-before-revert-hook ()
   "Pull changes before revert"
   (when (is-tramps3-mode-active)
-    (s3-cp (buffer-s3-path) (buffer-file-name))))
+    (tramps3-s3-cp (tramps3-buffer-s3-path) (buffer-file-name))))
 (add-hook 'before-revert-hook 'tramps3-before-revert-hook)
 
-(define-key tramps3-mode-map (kbd "C-G") (lambda () (interactive) (tramps3-refresh-directory)))
+;; todo - only define these in dired
+(define-key tramps3-mode-map (kbd "C-S-g") (lambda () (interactive) (tramps3-refresh-directory)))
+(define-key tramps3-mode-map (kbd "C-S-d") (lambda () (interactive) (tramps3-delete-directory (dired-get-filename))))
+(define-key tramps3-mode-map (kbd "C-S-r") (lambda () (interactive) (tramps3-move-directory (dired-get-filename))))
+(define-key tramps3-mode-map (kbd "C-S-c") (lambda () (interactive) (tramps3-move-directory (dired-get-filename) t)))
 (define-key tramps3-mode-map (kbd "C-<return>") (lambda () (interactive) (tramps3-open-file (dired-get-filename))))
 
 (define-minor-mode tramps3-mode

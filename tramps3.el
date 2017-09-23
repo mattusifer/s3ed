@@ -3,63 +3,22 @@
 
 ;; utility functions
 
-(defun tramps3-completing-read-backspace (cur-base)
-  "Adjust normal completing-read behavior - go up to parent directory 
-when backspace is pressed at the beginning of the string"
-  (if (not (equal cur-base "s3://"))
-      (condition-case nil
-          ;; use normal backspace behavior if no error was found
-          (backward-delete-char 1)
-
-        ;; if an error was found, we are at the beginning of the
-        ;; line. Recurse to the parent directory of the current path.
-        (error (tramps3-completing-read (concat (mapconcat 'identity (butlast (butlast (split-string cur-base "/"))) "/") "/"))))
-
-    ;; if we're at the base, allow errors, don't recurse
-    (backward-delete-char 1)))
-
-(defun exit-all-minibuffers ()
-  "Exit all tramps3 nested minibuffers"
-  (top-level)
-  (setq enable-recursive-minibuffers tramps3-old-recursive-minibuffer-setting))
-
-;; finding files
-(defun tramps3-completing-read (base)
-  "Use completing-read to find files in s3"
-  (let* ((bucket (equal base "s3://"))
-         (choices (seq-remove (lambda (el) (not el))
-                              (mapcar (lambda (el) (car (last (split-string el " "))))
-                                      (split-string (shell-command-to-string (format "aws s3 ls %s" base)) "\n"))))
-         (choice (minibuffer-with-setup-hook
-                     (lambda ()
-                       (setq tramps3-old-recursive-minibuffer-setting enable-recursive-minibuffers)
-                       (setq enable-recursive-minibuffers t)
-                       (define-key (current-local-map) (kbd "<backspace>") (lambda () (interactive) (tramps3-completing-read-backspace base)))
-                       (define-key (current-local-map) (kbd "C-g") (lambda () (interactive) (exit-all-minibuffers))))
-                   (completing-read (format "Find S3 File: %s" base) choices))))
-    (if (seq-contains choices choice)
-        (if (and (not bucket) (not (string-match "/\\'" choice)))
-            (concat base choice)
-          (tramps3-completing-read (if bucket (format "%s%s/" base choice) (concat base choice))))
-
-      (concat base choice))))
-
 (defun tramps3-find-file ()
   "Interactive function for finding files in s3"
   (interactive)
   ;; check if this is an s3 path
-  (let ((s3-path (tramps3-completing-read "s3://")))
-    (if (is-s3-path s3-path)
+  (let ((s3-path (tramps3-completing-read "s3://" "Find S3 file")))
+    (if (tramps3-is-s3-path s3-path)
         (let (;; full path to tmp file
-              (tmp-path (format "%s/%s" TMP_S3_DIR
+              (tmp-path (format "%s/%s" TRAMPS3_TMP_S3_DIR
                                 (mapconcat 'identity (nthcdr 2 (split-string s3-path "/")) "/")))
 
               ;; parent directory of temp file
-              (tmp-dir (format "%s/%s" TMP_S3_DIR
+              (tmp-dir (format "%s/%s" TRAMPS3_TMP_S3_DIR
                                (mapconcat 'identity (butlast (nthcdr 2 (split-string s3-path "/"))) "/"))))
 
           ;; create tmp dir
-          (mkdir tmp-dir)
+          (make-directory tmp-dir t)
 
           ;; open file or directory (in dired)
           (tramps3-open-file tmp-path)
