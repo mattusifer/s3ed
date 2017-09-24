@@ -1,11 +1,9 @@
-# tramps3
+# tramps3 ![travis-ci](https://travis-ci.org/mattusifer/tramps3.svg?branch=master)
 
-Tramps3 provides an interface to [Amazon S3](https://aws.amazon.com/s3/) from within Emacs. Tramps3 is inspired by [TRAMP](https://www.emacswiki.org/emacs/TrampMode), and strives to treat your data on S3 as if it were local, abstracting away as much of s3 as possible.
+Tramps3 provides an interface to [Amazon S3](https://aws.amazon.com/s3/) from within Emacs. Tramps3 is inspired by [TRAMP](https://www.emacswiki.org/emacs/TrampMode), and strives to provide near-seamless access to S3 from standard Emacs functions.
 
 ## Usage
-The main entry-point to tramps3 is from the `tramps3-find-file` function, which is a replacement for `find-file`, but for s3.
-
-Bind this function to a key that will allow quick access to s3
+The main entry-point to tramps3 is from the `tramps3-find-file` function - a replacement for `find-file`, but for s3. I have this function bound as follows:
 
 ```elisp
 (global-set-key (kbd "C-c s f") 'tramps3-find-file)
@@ -24,7 +22,7 @@ If you select a directory with `tramps3-find-file`, the directory will open in d
 - **C-S-d**: Remove the thing-at-point, with an option for recursive removal
 - **C-\<return\>**: Open the thing at point. If it is a directory, a new dired buffer will open. If it is a file, the file will be downloaded and opened. Save and revert actions on the resulting file will apply or pull changes from s3.
 
-Note that the above shortcuts mimick traditional dired shortcuts, with "C-S-" appended to the front.
+Note that the above shortcuts mimick standard dired shortcuts, with "C-S-" appended to the front.
 
 **Keep in mind** - a tramps3 dired buffer is just a normal dired buffer pointed at the tramps3 tmp directory. Normal dired commands will work, and the changes will not be propogated to s3. The above commands must be used in order to propogate changes to s3.
 
