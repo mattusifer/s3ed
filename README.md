@@ -34,6 +34,6 @@ Note that the above shortcuts mimick standard dired shortcuts, with "C-S-" appen
 
 Tramps3 will use `/tmp/tramps3` to pull down data from s3 by default. This location can be modified by changing `TRAMPS3_TMP_S3_DIR`.
 
-## Authorization
+## AWS Authentication
 
 Tramps3 uses the `aws` command line utility to access s3, which has several options for authentication. One easy method is to run `aws configure` to create a credentials file, which will get picked up by subsequent `aws` calls.
