@@ -7,7 +7,10 @@
   "Interactive function for finding files in s3"
   (interactive)
   ;; check if this is an s3 path
-  (let ((s3-path (tramps3-completing-read "s3://" "Find S3 file")))
+  (let* ((base-path (if (is-tramps3-mode-active)
+                        (tramps3-local-path-to-s3-path default-directory)
+                      "s3://"))
+         (s3-path (tramps3-completing-read base-path "Find S3 file")))
     (if (tramps3-is-s3-path s3-path)
         (let (;; full path to tmp file
               (tmp-path (format "%s/%s" TRAMPS3_TMP_S3_DIR
