@@ -22,13 +22,6 @@
     (tramps3-s3-cp (tramps3-buffer-s3-path) (buffer-file-name))))
 (add-hook 'before-revert-hook 'tramps3-before-revert-hook)
 
-;; todo - only define these in dired
-(define-key tramps3-mode-map (kbd "C-S-g") (lambda () (interactive) (tramps3-refresh-directory)))
-(define-key tramps3-mode-map (kbd "C-S-d") (lambda () (interactive) (tramps3-delete-directory (dired-get-filename))))
-(define-key tramps3-mode-map (kbd "C-S-r") (lambda () (interactive) (tramps3-move-directory (dired-get-filename))))
-(define-key tramps3-mode-map (kbd "C-S-c") (lambda () (interactive) (tramps3-move-directory (dired-get-filename) t)))
-(define-key tramps3-mode-map (kbd "C-<return>") (lambda () (interactive) (tramps3-open-file (dired-get-filename))))
-
 (define-minor-mode tramps3-mode
   "Minor mode for tramps3"
   :lighter " tramps3"

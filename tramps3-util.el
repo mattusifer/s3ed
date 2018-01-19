@@ -23,7 +23,7 @@ functions, replace with custom message 'msg' if provided. if
       (shell-command cmd))))
 
 (defun tramps3-completing-read-backspace (cur-base msg)
-  "Adjust normal completing-read behavior - go up to parent directory 
+  "Adjust normal completing-read behavior - go up to parent directory
 when backspace is pressed at the beginning of the string"
   (if (not (equal cur-base "s3://"))
       (condition-case nil
@@ -32,10 +32,7 @@ when backspace is pressed at the beginning of the string"
 
         ;; if an error was found, we are at the beginning of the
         ;; line. Recurse to the parent directory of the current path.
-        (error (progn
-                 (tramps3-completing-read (concat (mapconcat 'identity (butlast (butlast (split-string cur-base "/"))) "/") "/")
-                                          msg)
-                 (exit-recursive-edit))))
+        (error (throw 'backspace nil)))
 
     ;; if we're at the base, allow errors, don't recurse
     (backward-delete-char 1)))
@@ -52,16 +49,17 @@ when backspace is pressed at the beginning of the string"
          (choices (seq-remove (lambda (el) (not el)) (tramps3-s3-ls base)))
          (choice (minibuffer-with-setup-hook
                      (lambda ()
-                       (setq tramps3-old-recursive-minibuffer-setting enable-recursive-minibuffers)
-                       (setq enable-recursive-minibuffers t)
-                       (define-key (current-local-map) (kbd "<backspace>") (lambda () (interactive) (tramps3-completing-read-backspace base msg)))
-                       (define-key (current-local-map) (kbd "C-g") (lambda () (interactive) (tramps3-exit-all-minibuffers))))
-                   (completing-read (format "%s: %s" msg base) choices))))
-    (if (seq-contains choices choice)
-        (if (and (not bucket) (not (string-match "/\\'" choice)))
-            (concat base choice)
-          (tramps3-completing-read (if bucket (format "%s%s/" base choice) (concat base choice)) msg))
+                       (define-key (current-local-map) (kbd "<backspace>") (lambda () (interactive) (tramps3-completing-read-backspace base msg))))
+                   (catch 'backspace (completing-read (format "%s: %s" msg base) choices)))))
 
-      (concat base choice))))
+    ;; no choice means a backspace was entered, recurse upwards
+    (if (not choice)
+        (tramps3-completing-read (concat (mapconcat 'identity (butlast (butlast (split-string base "/"))) "/") "/")
+                               msg)
+      (if (seq-contains choices choice)
+          (if (and (not bucket) (not (string-match "/\\'" choice)))
+              (concat base choice)
+            (tramps3-completing-read (if bucket (format "%s%s/" base choice) (concat base choice)) msg))
+        (concat base choice)))))
 
 (provide 'tramps3-util)
