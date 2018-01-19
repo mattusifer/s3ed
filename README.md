@@ -3,15 +3,16 @@
 Tramps3 provides an interface to [Amazon S3](https://aws.amazon.com/s3/) from within Emacs. Tramps3 is inspired by [TRAMP](https://www.emacswiki.org/emacs/TrampMode), and strives to provide near-seamless access to S3 from standard Emacs functions.
 
 ## Usage
-The main entry-point to tramps3 is from the `tramps3-find-file` function - a replacement for `find-file`, but for s3. I have this function bound as follows:
+There are two main entry-points to tramps3. The first is the `tramps3-find-file` function - a replacement for `find-file`, but for s3. The second is the `tramps3-save-file` function - a replacement for `save-file` (or `write-file`), but for s3. I have these functions bound as follows:
 
 ```elisp
 (global-set-key (kbd "C-c s f") 'tramps3-find-file)
+(global-set-key (kbd "C-c s s") 'tramps3-save-file)
 ```
 
 ### Opening files with `tramps3-find-file`
 
-If you select a file with `tramps3-find-file`, the file will be downloaded from s3 to your local machine and opened. Saving that file will apply changes directly to s3, and reverting that file will pull data down from s3 before revert. 
+If you select a file with `tramps3-find-file`, the file will be downloaded from s3 to your local machine and opened. Saving that file will apply changes directly to s3, and reverting that file will pull data down from s3 before revert.
 
 ### Opening directories with `tramps3-find-file`
 If you select a directory with `tramps3-find-file`, the directory will open in dired. Before it opens, tramps3 will create empty directories and empty files to represent the directories and files at that location in s3, so that when the directory opens in dired, it will show all of the file and directory names at that location on s3. At this point there are several shortcuts available for accessing and modifying that data on s3:
@@ -25,6 +26,10 @@ If you select a directory with `tramps3-find-file`, the directory will open in d
 Note that the above shortcuts mimick standard dired shortcuts, with "C-S-" appended to the front.
 
 **Keep in mind** - a tramps3 dired buffer is just a normal dired buffer pointed at the tramps3 tmp directory. Normal dired commands will work, and the changes will not be propogated to s3. The above commands must be used in order to propogate changes to s3.
+
+### Saving files with `tramps3-save-file`
+
+If you save a file with `tramps3-save-file`, the file is first saved in the tramps3 temp dir (`/tmp/tramps3` by default) and then that file is copied up to the requested s3 path.
 
 ## Dependencies
 

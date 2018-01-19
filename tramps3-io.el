@@ -142,6 +142,14 @@
   (find-file input-file)
   (tramps3-mode))
 
+(defun tramps3-write-file (input-file)
+  "Save input file to s3"
+  (unless (tramps3-is-directory input-file)
+    (tramps3-s3-cp input-file (tramps3-local-path-to-s3-path input-file)))
+  (tramps3-refresh-directory input-file)
+  (find-file input-file)
+  (tramps3-mode))
+
 (defun tramps3-delete-directory (&optional input-dir)
   "Delete local file or directory, as well as corresponding path on s3"
   (let* ((current-directory (if input-dir input-dir (nth 1 (split-string (pwd)))))
