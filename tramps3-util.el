@@ -37,11 +37,6 @@ when backspace is pressed at the beginning of the string"
     ;; if we're at the base, allow errors, don't recurse
     (backward-delete-char 1)))
 
-(defun tramps3-exit-all-minibuffers ()
-  "Exit all tramps3 nested minibuffers"
-  (top-level)
-  (setq enable-recursive-minibuffers tramps3-old-recursive-minibuffer-setting))
-
 ;; finding files
 (defun tramps3-completing-read (base msg)
   "Use completing-read to find files in s3"

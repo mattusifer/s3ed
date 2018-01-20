@@ -25,17 +25,17 @@
           (make-directory tmp-dir t)
 
           ;; run callback
-          (funcall callback))
+          (funcall callback tmp-path))
       (message "S3 path is required"))))
 
 (defun tramps3-find-file ()
   "Interactive function for finding files in s3"
   (interactive)
-  (tramps3-run-command "Find S3 file" (lambda () (tramps3-open-file tmp-path))))
+  (tramps3-run-command "Find S3 file" (lambda (tmp-path) (tramps3-open-file tmp-path))))
 
 (defun tramps3-save-file ()
   "Interactive function for finding files in s3"
   (interactive)
-  (tramps3-run-command "Save S3 file" (lambda () (tramps3-write-file tmp-path))))
+  (tramps3-run-command "Save S3 file" (lambda (tmp-path) (tramps3-write-file tmp-path))))
 
 (provide 'tramps3)
