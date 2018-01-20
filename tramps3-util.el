@@ -25,32 +25,32 @@
 ;;; Code:
 
 (defun tramps3-string-starts-with (s prefix)
-  "Return non-nil if string s starts with prefix."
+  "Return non-nil if string S begins with PREFIX."
       (cond ((>= (length s) (length prefix))
              (string-equal (substring s 0 (length prefix)) prefix))
             (t nil)))
 
 (defun tramps3-string-ends-with (s suffix)
-  "Return non-nil if string s starts with prefix."
+  "Return non-nil if string S ends with SUFFIX."
   (not (equal nil (string-match (format "%s\\'" suffix) s))))
 
 (defun tramps3-is-dired-active ()
-  "t if we are in a dired buffer"
+  "True if we are in a dired buffer."
   (equal major-mode 'dired-mode))
 
 (defun tramps3-shell-command-no-message (cmd &optional ret msg)
-  "Inhibit messages from the emacs builtin shell-command
-functions, replace with custom message 'msg' if provided. if
-'ret' is not nil, results from shell command will be returned"
+  "Run CMD, inhibiting messages from the Emacs builtin ‘shell-command’.
+If 'RET' is not nil, results from CMD will be returned.
+Default messages will be replaced with custom message 'MSG' if it is provided."
   (when msg (message msg))
   (let ((inhibit-message t))
     (if ret
         (shell-command-to-string cmd)
       (shell-command cmd))))
 
-(defun tramps3-completing-read-backspace (cur-base msg)
-  "Adjust normal completing-read behavior - go up to parent directory
-when backspace is pressed at the beginning of the string"
+(defun tramps3-completing-read-backspace (cur-base)
+  "If CUR-BASE is at the root, backspace acts normally.
+Otherwise, backspace will go up one directory."
   (if (not (equal cur-base "s3://"))
       (condition-case nil
           ;; use normal backspace behavior if no error was found
@@ -65,7 +65,8 @@ when backspace is pressed at the beginning of the string"
 
 ;; finding files
 (defun tramps3-completing-read (base msg)
-  "Use completing-read to find files in s3"
+  "Use ‘completing-read’ to find files in s3 starting at BASE.
+MSG will be displayed to the user at prompt."
   (let* ((bucket (equal base "s3://"))
          (choices (seq-remove (lambda (el) (not el)) (tramps3-s3-ls base)))
          (choice (minibuffer-with-setup-hook
@@ -84,4 +85,5 @@ when backspace is pressed at the beginning of the string"
         (concat base choice)))))
 
 (provide 'tramps3-util)
-;; tramps3-util.el ends here
+
+;;; tramps3-util.el ends here

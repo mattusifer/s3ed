@@ -24,7 +24,7 @@
 
 ;;; Commentary:
 
-;; Tramps3 provides an interface to Amazon S3 from within Emacs. Tramps3
+;; Tramps3 provides an interface to Amazon S3 from within Emacs.  Tramps3
 ;; is inspired by TRAMP, and strives to provide near-seamless access to
 ;; S3 from standard Emacs functions.
 
@@ -37,7 +37,7 @@
 ;; define the two entry points to tramps3 - tramps3-find-file and tramps3-save-file
 
 (defun tramps3-find-file ()
-  "Open tramps3 buffer at input-file. Will be a refreshed dired buffer if it is a directory."
+  "Open tramps3 buffer at input-file.  Will be a refreshed dired buffer if it is a directory."
   (interactive)
   (let* ((current-s3-base-path (if (is-tramps3-mode-active)
                                    (tramps3-local-path-to-s3-path default-directory)
@@ -52,7 +52,7 @@
     (tramps3-mode)))
 
 (defun tramps3-save-file ()
-  "Save input file to s3"
+  "Save input file to s3."
   (interactive)
   (let* ((current-s3-base-path (if (is-tramps3-mode-active)
                                    (tramps3-local-path-to-s3-path default-directory)
@@ -71,4 +71,5 @@
                                     tramps3--minimal-emacs emacs-version)))
 
 (provide 'tramps3)
+
 ;;; tramps3.el ends here
