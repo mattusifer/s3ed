@@ -91,7 +91,7 @@
              (current-s3-file (tramps3-local-path-to-s3-path current-local-file))
              (current-s3-parent-dir (tramps3-parent-directory current-s3-file)))
         (-when-let* ((dest-s3-file (tramps3-completing-read current-s3-parent-dir
-                                                            (format "Rename %s to:" current-s3-file)))
+                                                            (format "Rename %s to" current-s3-file)))
                      (dest-local-file (tramps3-s3-path-to-local-path dest-s3-file)))
           (rename-file current-local-file dest-local-file t)
           (tramps3-s3-mv current-s3-file dest-s3-file (tramps3-is-directory current-local-file))
@@ -104,7 +104,7 @@
              (current-s3-file (tramps3-local-path-to-s3-path current-local-file))
              (current-s3-parent-dir (tramps3-parent-directory current-s3-file)))
         (-when-let* ((dest-s3-file (tramps3-completing-read current-s3-parent-dir
-                                                            (format "Copy %s to:" current-s3-file)))
+                                                            (format "Copy %s to" current-s3-file)))
                      (dest-local-file (tramps3-s3-path-to-local-path dest-s3-file)))
           (if (tramps3-is-directory current-s3-file)
               (copy-directory current-local-file dest-local-file)
