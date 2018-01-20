@@ -89,7 +89,11 @@
 
 (defun tramps3-is-s3-path (path)
   "Confirm that this PATH is a valid s3 path."
-  (tramps3-string-starts-with path "s3"))
+  (tramps3-string-starts-with path "s3://"))
+
+(defun tramps3-is-tramp-path (path)
+  "Confirm that this PATH is a valid tramp path."
+  (tramps3-string-starts-with path "s3:/"))
 
 (defun tramps3-is-directory (path)
   "Confirm that this PATH is a directory."
@@ -113,6 +117,33 @@
     (let ((local-path (replace-regexp-in-string "s3:/" tramps3-tmp-s3-dir path)))
       local-path)))
 
+(defun tramps3-tramp-path-to-local-path (path)
+  "Convert tramp PATH to local path"
+  (when (tramps3-is-tramp-path path)
+    (replace-regexp-in-string "s3:" tramps3-tmp-s3-dir path)))
+
+(defun tramps3-tramp-path-to-s3-path (path)
+  "Convert tramp PATH to s3 path"
+  (let ((s3-path (replace-regexp-in-string "s3:" "s3:/" path)))
+    (when (and (tramps3-is-s3-path s3-path)
+               (tramps3-is-tramp-path path))
+      (if (and (tramps3-is-directory path) (not (tramps3-string-ends-with s3-path "/")))
+          (concat s3-path "/")
+        s3-path))))
+
+(defun tramps3-s3-path-to-tramp-path (path)
+  "Convert s3 PATH to tramp path"
+  (let ((tramp-path (replace-regexp-in-string "s3:/" "s3:")))
+    (when (and (tramps3-is-tramp-path tramp-path)
+               (tramps3-is-s3-path path))
+      tramp-path)))
+
+(defun tramps3-local-path-to-tramp-path (path)
+  "Convert local PATH to tramp path"
+  (let ((tramp-path (replace-regexp-in-string tramps3-tmp-s3-dir "s3:")))
+    (when (tramps3-is-tramp-path tramp-path)
+      tramp-path)))
+
 (defun tramps3-buffer-s3-path ()
   "Get associated s3 path of current buffer."
   (tramps3-local-path-to-s3-path (buffer-file-name)))
@@ -123,7 +154,7 @@
       (concat (mapconcat 'identity(-drop-last 2 (split-string path "/")) "/") "/")
     (concat (mapconcat 'identity (-drop-last 1 (split-string path "/")) "/") "/")))
 
-;; working with files
+;; high-level black box operations
 
 (defun tramps3-refresh-directory (&optional input-dir)
   "Refresh INPUT-DIR from s3. If no input dir is specified, PWD will be used."
@@ -152,6 +183,20 @@
     (when (and (not (tramps3-is-dired-active))
                (equal (buffer-file-name) input-dir))
       (revert-buffer t t))))
+
+(defun tramps3-copy-directory (filename new-filename)
+  ""
+  (let* ((current-s3-file (tramps3-tramp-path-to-s3-path filename)x)
+         (current-local-file (tramps3-tramp-path-to-local-path filename))
+         (current-s3-parent-dir (tramps3-parent-directory current-s3-file))
+         (dest-s3-file (tramps3-tramp-path-to-s3-path filename))
+         (dest-local-file (tramps3-tramp-path-to-local-path filename)))
+    (if (tramps3-is-directory current-s3-file)
+        (copy-directory current-local-file dest-local-file)
+      (copy-file current-local-file dest-local-file))
+    (tramps3-s3-cp current-s3-file dest-s3-file (tramps3-is-directory
+                                                 current-local-file))
+    (revert-buffer t t)))
 
 (provide 'tramps3-io)
 

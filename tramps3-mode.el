@@ -152,10 +152,6 @@ The original function and arguments are available as ORIG-DIRED-FIND-FILE and AR
     (apply orig-dired-find-file args)))
 (advice-add 'dired-find-file :around #'tramps3-dired-find-s3-file)
 
-(define-minor-mode tramps3-mode
-  "Minor mode for tramps3"
-  :lighter " tramps3"
-  :keymap tramps3-mode-map)
 
 (provide 'tramps3-mode)
 
