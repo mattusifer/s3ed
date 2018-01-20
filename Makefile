@@ -3,7 +3,6 @@ tramps3-lint:
 
 tramps3-test:
 	emacs -batch -l ert			\
-		-l tramps3-constants.el		\
 		-l tramps3-util.el		\
 		-l tramps3-io.el		\
 		-l tramps3-mode.el		\
