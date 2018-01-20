@@ -1,7 +1,7 @@
 define INIT_PACKAGE_EL
 (progn
   (require 'package)
-  (push '(\"melpa\" . \"http://melpa.org/packages/\") package-archives)
+  (push '("melpa" . "http://melpa.org/packages/") package-archives)
   (package-initialize))
 endef
 export INIT_PACKAGE_EL
@@ -19,6 +19,16 @@ tramps3-lint:
 tramps3-test:
 	emacs -batch -l ert			\
 		--eval "$${INIT_PACKAGE_EL}"    \
+		-l tramps3-util.el		\
+		-l tramps3-io.el		\
+		-l tramps3-mode.el		\
+		-l tramps3.el			\
+		-l test/tramps3-tests.el	\
+		-f ert-run-tests-batch-and-exit
+
+tramps3-travis-test:
+	${EMACS} -Q --batch -L ${PWD}           \
+		-l ert				\
 		-l tramps3-util.el		\
 		-l tramps3-io.el		\
 		-l tramps3-mode.el		\

@@ -18,9 +18,11 @@ install:
   - $CURL -O https://github.com/npostavs/emacs-travis/releases/download/bins/emacs-bin-${EMACS_VERSION}.tar.gz
   - tar -xaf emacs-bin-${EMACS_VERSION}.tar.gz -C /
   - export EMACS=/tmp/emacs/bin/emacs
+  - $CURL -O https://raw.githubusercontent.com/magnars/dash.el/master/dash.el
+  - $EMACS -Q --batch -L . -f batch-byte-compile dash.el
   - $EMACS --version
 script:
-  - make tramps3-test EMACSBIN=$EMACS
+  - make tramps3-travis-test
 notifications:
   email:
     # Default is change, but that includes a new branch's 1st success.
