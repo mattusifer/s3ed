@@ -1,6 +1,11 @@
-(require 'tramps3-constants)
+;;; tramps3-tests.el --- tests for tramps3
 
-;; tramps3-util
+;; Copyright (C) 2018  Matt Usifer
+;;
+;; License: GPLv3
+
+;;; Code:
+
 (require 'tramps3-util)
 
 (defmacro tramps3-setup-teardown-test-dir (&rest body)
@@ -23,7 +28,6 @@
   (dired "/")
   (should (tramps3-is-dired-active)))
 
-;; tramps3-io
 (require 'tramps3-io)
 
 (ert-deftest tramps3-mkdirs-test ()
@@ -57,13 +61,13 @@
      (should (tramps3-is-directory directory-name)))))
 
 (ert-deftest tramps3-local-path-to-s3-path-test ()
-  (should (equal (tramps3-local-path-to-s3-path (format "%s/local/path" TRAMPS3_TMP_S3_DIR))
+  (should (equal (tramps3-local-path-to-s3-path (format "%s/local/path" tramps3-tmp-s3-dir))
                  "s3://local/path"))
   (should (not (tramps3-local-path-to-s3-path "typo/local/path"))))
 
 (ert-deftest tramps3-s3-path-to-local-path-test ()
   (should (equal (tramps3-s3-path-to-local-path "s3://s3/path")
-                 (format "%s/s3/path" TRAMPS3_TMP_S3_DIR)))
+                 (format "%s/s3/path" tramps3-tmp-s3-dir)))
   (should (not (tramps3-s3-path-to-local-path "s4://typo/local/path"))))
 
 (ert-deftest tramps3-parent-directory-test ()
@@ -71,3 +75,5 @@
                  "/parent/"))
   (should (equal (tramps3-parent-directory "/parent/child-dir/")
                  "/parent/")))
+
+;;; tramps3-tests.el ends here

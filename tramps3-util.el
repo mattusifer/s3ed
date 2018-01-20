@@ -1,3 +1,29 @@
+;;; tramps3-util.el --- Various utilities
+
+;; Copyright (C) 2018 Matt Usifer
+
+;; Author: Matt Usifer <mattusifer@gmail.com>
+
+;; Tramps3 is free software; you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+
+;; Tramps3 is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+;;; Commentary:
+
+;; This library provides several functions commonly used throughout
+;; tramps3
+
+;;; Code:
+
 (defun tramps3-string-starts-with (s prefix)
   "Return non-nil if string s starts with prefix."
       (cond ((>= (length s) (length prefix))
@@ -58,3 +84,4 @@ when backspace is pressed at the beginning of the string"
         (concat base choice)))))
 
 (provide 'tramps3-util)
+;; tramps3-util.el ends here
