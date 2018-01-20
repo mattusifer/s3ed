@@ -41,13 +41,11 @@
 
 (defun tramps3-s3-ls (path)
   "List an s3 path"
-  (condition-case nil
-      (-remove (lambda (el) (string= "" el))
-               (-map (lambda (el) (-take-last 1 (split-string el)))
-                     (split-string (tramps3-shell-command-no-message
-                                    (format "aws s3 ls %s" path) t
-                                    (format "%s: Listing files on s3..." tramps3-app-name)) "\n")))
-    (error (message (format "%s: AWS credentials are not configured" tramps3-app-name)))))
+  (--remove (string= "" it)
+            (--map (car (-take-last 1 (split-string it)))
+                 (split-string (tramps3-shell-command-no-message
+                                (format "aws s3 ls %s" path) t
+                                (format "%s: Listing files on s3..." tramps3-app-name)) "\n"))))
 
 (defun tramps3-s3-cp (src dest &optional recursive)
   "Copy s3 src file to dest"
@@ -132,29 +130,25 @@
          (s3-tramps3-parent-directory (if (tramps3-is-directory current-directory)
                                           s3-directory
                                         (tramps3-parent-directory s3-directory)))
-         (file-list (tramps3-s3-ls s3-directory))
+         (file-list (-filter (lambda (f) f) (tramps3-s3-ls s3-directory)))
          (full-local-paths (-map (lambda (file) (tramps3-s3-path-to-local-path
                                                  (concat s3-tramps3-parent-directory file)))
                                  file-list))
-         (organized-file-list (--separate (tramps3-is-directory it) full-local-paths)))
+         (organized-file-list (--separate (tramps3-is-directory it) full-local-paths))
+         (new-dirs (car organized-file-list))
+         (new-files (car (-take-last 1 organized-file-list))))
 
-      ;; clear out local directory
-    (when (tramps3-is-directory current-directory)
-      (delete-directory current-directory t)
+    ;; clear out local directory
+    (when (tramps3-is-directory s3-directory)
+      (when (tramps3-is-directory current-directory)
+        (delete-directory current-directory t))
       (make-directory current-directory t))
 
-      ;; rebuild from files s3
+    ;; rebuild from files s3
+    (when new-dirs (tramps3-mkdirs new-dirs))
+    (when new-files (tramps3-create-empty-files new-files))
 
-    (dolist (group organized-file-list)
-      (if (pop group)
-          ;; make all directories
-          (tramps3-mkdirs group)
-
-        ;; make empty files
-        (tramps3-create-empty-files group)))
-
-      ;; revert the buffer if necessary
-
+    ;; revert the buffer if necessary
     (when (and (not (tramps3-is-dired-active))
                (equal (buffer-file-name) input-dir))
       (revert-buffer t t))))
