@@ -1,3 +1,6 @@
+tramps3-lint:
+	./self_lint.sh
+
 tramps3-test:
 	emacs -batch -l ert			\
 		-l tramps3-constants.el		\

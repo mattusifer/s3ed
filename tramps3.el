@@ -3,14 +3,12 @@
 
 ;; utility functions
 
-(defun tramps3-find-file ()
-  "Interactive function for finding files in s3"
-  (interactive)
+(defun tramps3-run-command (msg callback)
   ;; check if this is an s3 path
   (let* ((base-path (if (is-tramps3-mode-active)
                         (tramps3-local-path-to-s3-path default-directory)
                       "s3://"))
-         (s3-path (tramps3-completing-read base-path "Find S3 file")))
+         (s3-path (tramps3-completing-read base-path msg)))
     (if (tramps3-is-s3-path s3-path)
         (let (;; full path to tmp file
               (tmp-path (format "%s/%s" TRAMPS3_TMP_S3_DIR
@@ -21,14 +19,23 @@
                                (mapconcat 'identity (butlast (nthcdr 2 (split-string s3-path "/"))) "/"))))
 
           ;; create tmp dir
+          (condition-case nil
+              (delete-directory TRAMPS3_TMP_S3_DIR t)
+            (error nil))
           (make-directory tmp-dir t)
 
-          ;; open file or directory (in dired)
-          (tramps3-open-file tmp-path)
-
-          (tramps3-mode))
+          ;; run callback
+          (funcall callback tmp-path))
       (message "S3 path is required"))))
 
-(provide 'tramps3)
+(defun tramps3-find-file ()
+  "Interactive function for finding files in s3"
+  (interactive)
+  (tramps3-run-command "Find S3 file" (lambda (tmp-path) (tramps3-open-file tmp-path))))
 
-;; (global-set-key (kbd "C-c C-s C-f") 'tramps3-find-file)
+(defun tramps3-save-file ()
+  "Interactive function for finding files in s3"
+  (interactive)
+  (tramps3-run-command "Save S3 file" (lambda (tmp-path) (tramps3-write-file tmp-path))))
+
+(provide 'tramps3)

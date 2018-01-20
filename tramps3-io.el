@@ -128,8 +128,8 @@
               (tramps3-create-empty-files group)))
 
           ;; revert the buffer if necessary
-          (when (or (tramps3-is-dired-active)
-                    (equal (buffer-file-name) input-dir))
+          (when (and (not (tramps3-is-dired-active))
+                     (equal (buffer-file-name) input-dir))
             (revert-buffer t t)))
       (signal 'error "Not an in an s3 directory, or invalid directory provided."))))
 
@@ -138,40 +138,19 @@
   "Open tramps3 buffer at input-file. Will be a refreshed dired buffer if it is a directory."
   (unless (tramps3-is-directory input-file)
     (tramps3-s3-cp (tramps3-local-path-to-s3-path input-file) input-file))
-  (tramps3-refresh-directory input-file)
   (find-file input-file)
+  (tramps3-refresh-directory input-file)
   (tramps3-mode))
 
-(defun tramps3-delete-directory (&optional input-dir)
-  "Delete local file or directory, as well as corresponding path on s3"
-  (let* ((current-directory (if input-dir input-dir (nth 1 (split-string (pwd)))))
-         (s3-directory (tramps3-local-path-to-s3-path current-directory))
-         (recursive (when (tramps3-is-directory s3-directory)
-                      (y-or-n-p (format "%s: Recursively delete %s?" TRAMPS3_APP_NAME s3-directory)))))
-    (if (tramps3-is-directory current-directory)
-        (delete-directory current-directory recursive)
-      (delete-file current-directory))
-    (tramps3-s3-rm s3-directory recursive)
-    (revert-buffer t t)))
-
-(defun tramps3-move-directory (&optional input-dir copy)
-  "Copy local file or directory (recursively), as well as corresponding path on s3"
-  (let* ((current-directory (if input-dir input-dir (nth 1 (split-string (pwd)))))
-         (s3-directory (tramps3-local-path-to-s3-path current-directory))
-         (completing-read-msg (format (if copy "Copy %s to" "Move %s to") s3-directory))
-         (dest-s3-directory (tramps3-completing-read (tramps3-parent-directory s3-directory)
-                                                     completing-read-msg))
-         (dest-local-directory (tramps3-s3-path-to-local-path dest-s3-directory)))
-    (make-directory (tramps3-parent-directory dest-local-directory) t)
-    (if copy
-      (if (tramps3-is-directory current-directory)
-          (progn (tramps3-s3-cp s3-directory dest-s3-directory t)
-                 (copy-directory current-directory dest-local-directory t))
-        (progn (tramps3-s3-cp s3-directory dest-s3-directory)
-               (copy-file current-directory dest-local-directory t)))
-      (progn
-        (tramps3-s3-mv s3-directory dest-s3-directory (tramps3-is-directory current-directory))
-        (rename-file current-directory dest-local-directory t)))
-    (revert-buffer t t)))
+(defun tramps3-write-file (input-file)
+  "Save input file to s3"
+  (if (tramps3-is-directory input-file)
+      (error "Input file must be a file, no directories allowed")
+    (progn
+      (write-file input-file)
+      (tramps3-s3-cp input-file (tramps3-local-path-to-s3-path input-file))
+      (tramps3-refresh-directory input-file)
+      (find-file input-file)
+      (tramps3-mode))))
 
 (provide 'tramps3-io)
