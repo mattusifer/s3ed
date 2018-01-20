@@ -15,17 +15,14 @@ There are two main entry-points to tramps3. The first is the `tramps3-find-file`
 If you select a file with `tramps3-find-file`, the file will be downloaded from s3 to your local machine and opened. Saving that file will apply changes directly to s3, and reverting that file will pull data down from s3 before revert.
 
 ### Opening directories with `tramps3-find-file`
-If you select a directory with `tramps3-find-file`, the directory will open in dired. Before it opens, tramps3 will create empty directories and empty files to represent the directories and files at that location in s3, so that when the directory opens in dired, it will show all of the file and directory names at that location on s3. At this point there are several shortcuts available for accessing and modifying that data on s3:
+If you select a directory with `tramps3-find-file`, the directory will open in dired. Before it opens, tramps3 will create empty directories and empty files to represent the directories and files at that location in s3, so that when the directory opens in dired, it will show all of the file and directory names at that location on s3. At this point, the following native dired operations on this local directory will be linked to the analagous files on s3:
 
-- **C-S-g**: Refresh the directory from s3
-- **C-S-c**: Copy the thing-at-point, prompting for a destination first
-- **C-S-r**: Move (rename) the thing-at-point, prompting for a destination first
-- **C-S-d**: Remove the thing-at-point, with an option for recursive removal
-- **C-\<return\>**: Open the thing at point. If it is a directory, a new dired buffer will open. If it is a file, the file will be downloaded and opened. Save and revert actions on the resulting file will apply or pull changes from s3.
+- Renaming or copying files and directories
+- Deleting files and directories, marking files and directories for deletion
+- Refreshing the directory
+- Opening files and directories (including opening and editing compressed files, like in normal dired mode)
 
-Note that the above shortcuts mimick standard dired shortcuts, with "C-S-" appended to the front.
-
-**Keep in mind** - a tramps3 dired buffer is just a normal dired buffer pointed at the tramps3 tmp directory. Normal dired commands will work, and the changes will not be propogated to s3. The above commands must be used in order to propogate changes to s3.
+**Keep in mind** - Other normal dired commands will work, and the resulting changes to the local dir will not be propogated to s3.
 
 ### Saving files with `tramps3-save-file`
 
