@@ -45,10 +45,10 @@
          (current-s3-file-path (tramps3-completing-read current-s3-base-path "Find S3 file"))
          (current-local-base-path (tramps3-s3-path-to-local-path current-s3-base-path))
          (current-local-file-path (tramps3-s3-path-to-local-path current-s3-file-path)))
-    (unless (tramps3-is-directory current-local-file-path)
+    (unless (tramps3-is-directory current-s3-file-path)
       (tramps3-s3-cp (tramps3-local-path-to-s3-path current-local-file-path) current-local-file-path))
-    (find-file current-local-file-path)
     (tramps3-refresh-directory current-local-file-path)
+    (find-file current-local-file-path)
     (tramps3-mode)))
 
 (defun tramps3-save-file ()
