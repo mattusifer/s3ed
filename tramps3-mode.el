@@ -36,7 +36,7 @@
 
 (defun is-tramps3-mode-active ()
   "Check whether tramps3 is an active minor mode."
-  (And (member 'tramps3-mode minor-mode-list) (symbolp 'tramps3-mode)
+  (and (member 'tramps3-mode minor-mode-list) (symbolp 'tramps3-mode)
        (symbol-value 'tramps3-mode)))
 
 (defun tramps3-after-save-hook ()
