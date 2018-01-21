@@ -62,9 +62,12 @@ The original function and arguments are available as ORIG-DIRED-DO-DELETE and AR
                                              (dired-get-filename))))
         (if (and (tramps3-is-directory current-local-file)
                  (y-or-n-p (format "Recursively delete %s? " current-s3-file)))
-            (delete-directory current-local-file t)
-          (delete-file current-local-file))
-        (tramps3-s3-rm current-s3-file (tramps3-is-directory current-local-file))
+            (progn
+              (delete-directory current-local-file t)
+              (tramps3-s3-rm current-s3-file t))
+          (progn
+            (delete-file current-local-file)
+            (tramps3-s3-rm current-s3-file)))
         (revert-buffer t t)))
     (apply orig-dired-do-delete args)))
 (advice-add 'dired-do-delete :around #'tramps3-dired-do-s3-delete)
