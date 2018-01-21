@@ -30,6 +30,11 @@
 
 (require 'tramps3-io)
 
+(ert-deftest tramps3-s3-ls-test ()
+  (let* ((inhibit-message t)
+         (res (tramps3-s3-ls "s3://tramps3/")))
+    (should (equal res '("test/" "testdir/" "testfile")))))
+
 (ert-deftest tramps3-mkdirs-test ()
   (tramps3-setup-teardown-test-dir
    (let ((inhibit-message t))

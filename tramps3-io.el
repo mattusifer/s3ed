@@ -41,7 +41,7 @@
 
 (defun tramps3-s3-ls (path)
   "List an s3 PATH."
-  (--remove (string= "" it)
+  (--remove (or (string= "" it) (not it))
             (--map (car (-take-last 1 (split-string it)))
                  (split-string (tramps3-shell-command-no-message
                                 (format "aws s3 ls %s" path) t
