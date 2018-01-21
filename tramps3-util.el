@@ -72,8 +72,7 @@ Otherwise, backspace will go up one directory."
 (defun tramps3-completing-read (base msg)
   "Use ‘completing-read’ to find files in s3 starting at BASE.
 MSG will be displayed to the user at prompt."
-  (let* ((bucket (tramps3-is-root-s3-path base))
-         (choices (seq-remove (lambda (el) (not el)) (tramps3-s3-ls base)))
+  (let* ((choices (seq-remove (lambda (el) (not el)) (tramps3-s3-ls base)))
          (choice (minibuffer-with-setup-hook
                      (lambda ()
                        (define-key (current-local-map) (kbd "<backspace>")
@@ -85,9 +84,9 @@ MSG will be displayed to the user at prompt."
         (tramps3-completing-read (concat (mapconcat 'identity (butlast (butlast (split-string base "/"))) "/") "/")
                                msg)
       (if (seq-contains choices choice)
-          (if (and (not bucket) (not (string-match "/\\'" choice)))
+          (if (and (not (string-match "/\\'" choice)))
               (concat base choice)
-            (tramps3-completing-read (if bucket (format "%s%s/" base choice) (concat base choice)) msg))
+            (tramps3-completing-read (concat base choice) msg))
         (concat base choice)))))
 
 (provide 'tramps3-util)
