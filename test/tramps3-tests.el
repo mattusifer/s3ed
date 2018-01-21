@@ -6,6 +6,8 @@
 
 ;;; Code:
 
+(require 'dash)
+
 (require 'tramps3-util)
 
 (defmacro tramps3-setup-teardown-test-dir (&rest body)
@@ -30,15 +32,36 @@
 
 (require 'tramps3-io)
 
+(ert-deftest tramps3-s3-ls-test ()
+  (let* ((inhibit-message t)
+         (res (tramps3-s3-ls "s3://tramps3/")))
+    (should (equal res '("test/" "testdir/" "testfile")))))
+
+(ert-deftest tramps3-refresh-directory-test ()
+  (tramps3-setup-teardown-test-dir
+   (let* ((inhibit-message t)
+          (tramps3-tmp-s3-dir (substring tramps3-test-directory 0 -1))
+          (tramps3-subdir (format "%s/tramps3/" tramps3-tmp-s3-dir)))
+     (tramps3-refresh-directory tramps3-subdir)
+     (let ((organized-file-list (--separate (tramps3-is-directory
+                                             (format "%s%s" tramps3-subdir it))
+                                            (directory-files tramps3-subdir))))
+       (should (and (member "test" (car organized-file-list))
+                    (member "testdir" (car organized-file-list))))
+       (should (and (member "testfile" (car (-take-last 1 organized-file-list)))))))))
+
 (ert-deftest tramps3-mkdirs-test ()
   (tramps3-setup-teardown-test-dir
    (let ((inhibit-message t))
      (tramps3-mkdirs `(,(format "%s/test1" tramps3-test-directory)
                        ,(format "%s/test2" tramps3-test-directory)
-                       ,(format "%s/test3" tramps3-test-directory))))
-   (should (and (member "test1" (directory-files tramps3-test-directory))
-                (member "test2" (directory-files tramps3-test-directory))
-                (member "test3" (directory-files tramps3-test-directory))))))
+                       ,(format "%s/test3" tramps3-test-directory)))
+     (should (and (member "test1" (directory-files tramps3-test-directory))
+                  (member "test2" (directory-files tramps3-test-directory))
+                  (member "test3" (directory-files tramps3-test-directory))))
+     (should (and (tramps3-is-directory (format "%s/test1" tramps3-test-directory))
+                  (tramps3-is-directory (format "%s/test2" tramps3-test-directory))
+                  (tramps3-is-directory (format "%s/test3" tramps3-test-directory)))))))
 
 (ert-deftest tramps3-create-empty-file-test ()
   (tramps3-setup-teardown-test-dir

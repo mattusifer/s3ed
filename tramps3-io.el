@@ -41,11 +41,11 @@
 
 (defun tramps3-s3-ls (path)
   "List an s3 PATH."
-  (--remove (string= "" it)
+  (--remove (or (string= "" it) (not it))
             (--map (car (-take-last 1 (split-string it)))
-                 (split-string (tramps3-shell-command-no-message
-                                (format "aws s3 ls %s" path) t
-                                (format "%s: Listing files on s3..." tramps3-app-name)) "\n"))))
+                   (split-string (tramps3-shell-command-no-message
+                                  (format "aws s3 ls %s" path) t
+                                  (format "%s: Listing files on s3..." tramps3-app-name)) "\n"))))
 
 (defun tramps3-s3-cp (src dest &optional recursive)
   "Copy s3 SRC file to DEST.  If specified, this will be a RECURSIVE operation."
@@ -95,9 +95,7 @@
   "Confirm that this PATH is a directory."
   (if (tramps3-is-s3-path path)
       (tramps3-string-ends-with path "/")
-    (condition-case nil
-        (equal 0 (tramps3-shell-command-no-message (format "test -d %s" path)))
-      (error nil))))
+    (equal 0 (tramps3-shell-command-no-message (format "test -d %s" path)))))
 
 ;; s3 to local translation, path functions
 
@@ -131,16 +129,14 @@
   "Refresh INPUT-DIR from s3. If no input dir is specified, PWD will be used."
   (let* ((current-directory (if input-dir input-dir (nth 1 (split-string (pwd)))))
          (s3-directory (tramps3-local-path-to-s3-path current-directory))
-         (s3-tramps3-parent-directory (if (tramps3-is-directory current-directory)
-                                          s3-directory
-                                        (tramps3-parent-directory s3-directory)))
          (file-list (-filter (lambda (f) f) (tramps3-s3-ls s3-directory)))
-         (full-local-paths (-map (lambda (file) (tramps3-s3-path-to-local-path
-                                                 (concat s3-tramps3-parent-directory file)))
+         (full-s3-paths (-map (lambda (file) (concat s3-directory file))
                                  file-list))
-         (organized-file-list (--separate (tramps3-is-directory it) full-local-paths))
-         (new-dirs (car organized-file-list))
-         (new-files (car (-take-last 1 organized-file-list))))
+         (organized-file-list (--separate (tramps3-is-directory it) full-s3-paths))
+         (new-dirs (-map (lambda (f) (tramps3-s3-path-to-local-path f))
+                         (car organized-file-list)))
+         (new-files (-map (lambda (f) (tramps3-s3-path-to-local-path f))
+                          (car (-take-last 1 organized-file-list)))))
 
     ;; clear out local directory
     (when (tramps3-is-directory s3-directory)
