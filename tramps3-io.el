@@ -41,11 +41,14 @@
 
 (defun tramps3-s3-ls (path)
   "List an s3 PATH."
-  (--remove (or (string= "" it) (not it))
-            (--map (car (-take-last 1 (split-string it)))
-                   (split-string (tramps3-shell-command-no-message
-                                  (format "aws s3 ls %s" path) t
-                                  (format "%s: Listing files on s3..." tramps3-app-name)) "\n"))))
+  (flet ((parse-s3-ls-raw-output (raw-line) (car (-take-last 1 (split-string it)))))
+    (--remove (or (string= "" it) (not it))
+              (--map (if (tramps3-is-root-s3-path path)
+                         (concat (parse-s3-ls-raw-output it) "/")
+                       (parse-s3-ls-raw-output it))
+                     (split-string (tramps3-shell-command-no-message
+                                    (format "aws s3 ls %s" path) t
+                                    (format "%s: Listing files on s3..." tramps3-app-name)) "\n")))))
 
 (defun tramps3-s3-cp (src dest &optional recursive)
   "Copy s3 SRC file to DEST.  If specified, this will be a RECURSIVE operation."
