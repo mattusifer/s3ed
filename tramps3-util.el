@@ -24,6 +24,11 @@
 
 ;;; Code:
 
+(defconst tramps3-s3-uri-scheme "s3://")
+
+(defun tramps3-is-root-s3-path (path)
+  (equal path tramps3-s3-uri-scheme))
+
 (defun tramps3-string-starts-with (s prefix)
   "Return non-nil if string S begins with PREFIX."
       (cond ((>= (length s) (length prefix))
@@ -51,7 +56,7 @@ Default messages will be replaced with custom message 'MSG' if it is provided."
 (defun tramps3-completing-read-backspace (cur-base)
   "If CUR-BASE is at the root, backspace acts normally.
 Otherwise, backspace will go up one directory."
-  (if (not (equal cur-base "s3://"))
+  (if (not (tramps3-is-root-s3-path cur-base))
       (condition-case nil
           ;; use normal backspace behavior if no error was found
           (backward-delete-char 1)
@@ -67,11 +72,11 @@ Otherwise, backspace will go up one directory."
 (defun tramps3-completing-read (base msg)
   "Use ‘completing-read’ to find files in s3 starting at BASE.
 MSG will be displayed to the user at prompt."
-  (let* ((bucket (equal base "s3://"))
-         (choices (seq-remove (lambda (el) (not el)) (tramps3-s3-ls base)))
+  (let* ((choices (seq-remove (lambda (el) (not el)) (tramps3-s3-ls base)))
          (choice (minibuffer-with-setup-hook
                      (lambda ()
-                       (define-key (current-local-map) (kbd "<backspace>") (lambda () (interactive) (tramps3-completing-read-backspace base))))
+                       (define-key (current-local-map) (kbd "<backspace>")
+                         (lambda () (interactive) (tramps3-completing-read-backspace base))))
                    (catch 'backspace (completing-read (format "%s: %s" msg base) choices)))))
 
     ;; no choice means a backspace was entered, recurse upwards
@@ -79,9 +84,9 @@ MSG will be displayed to the user at prompt."
         (tramps3-completing-read (concat (mapconcat 'identity (butlast (butlast (split-string base "/"))) "/") "/")
                                msg)
       (if (seq-contains choices choice)
-          (if (and (not bucket) (not (string-match "/\\'" choice)))
+          (if (and (not (string-match "/\\'" choice)))
               (concat base choice)
-            (tramps3-completing-read (if bucket (format "%s%s/" base choice) (concat base choice)) msg))
+            (tramps3-completing-read (concat base choice) msg))
         (concat base choice)))))
 
 (provide 'tramps3-util)
