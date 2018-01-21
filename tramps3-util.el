@@ -71,7 +71,7 @@ MSG will be displayed to the user at prompt."
          (choices (seq-remove (lambda (el) (not el)) (tramps3-s3-ls base)))
          (choice (minibuffer-with-setup-hook
                      (lambda ()
-                       (define-key (current-local-map) (kbd "<backspace>") (lambda () (interactive) (tramps3-completing-read-backspace base msg))))
+                       (define-key (current-local-map) (kbd "<backspace>") (lambda () (interactive) (tramps3-completing-read-backspace base))))
                    (catch 'backspace (completing-read (format "%s: %s" msg base) choices)))))
 
     ;; no choice means a backspace was entered, recurse upwards
