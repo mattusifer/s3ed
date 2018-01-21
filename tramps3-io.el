@@ -41,7 +41,7 @@
 
 (defun tramps3-s3-ls (path)
   "List an s3 PATH."
-  (flet ((parse-s3-ls-raw-output (raw-line) (car (-take-last 1 (split-string it)))))
+  (cl-flet ((parse-s3-ls-raw-output (raw-line) (car (-take-last 1 (split-string it)))))
     (--remove (or (string= "" it) (not it))
               (--map (if (tramps3-is-root-s3-path path)
                          (concat (parse-s3-ls-raw-output it) "/")
