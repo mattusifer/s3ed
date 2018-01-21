@@ -1,0 +1,58 @@
+#!/usr/bin/python
+
+import sys
+
+AWS_APP = sys.argv[1]
+AWS_OPERATION = sys.argv[2]
+AWS_ARGS = sys.argv[3:]
+
+test_paths = [
+    's3://tramps3/testdir/testfile',
+    's3://tramps3/testfile',
+    's3://tramps3/test/subdir/another-file',
+    's3://tramps3/test/subdir/yet-another-file',
+    's3://tramps3/test/subdir/yet-another-dir/deepest-level',
+    's3://another-bucket/tramps3'
+]
+
+if AWS_APP != 's3':
+    raise ValueError(
+        'Invalid app name: {}. This module is only built to test s3 calls!'.format(AWS_APP)
+    )
+
+if AWS_OPERATION == 'ls':
+
+    if not AWS_ARGS:
+        desired_prefix = 's3://'
+    else:
+        desired_prefix = AWS_ARGS[0]
+
+    if not desired_prefix.startswith('s3://'):
+        desired_prefix = 's3://' + desired_prefix
+
+    secondary_filter = ''
+
+    if not desired_prefix.endswith('/'):
+        secondary_filter = desired_prefix.split('/')[-1]
+        desired_prefix = '/'.join(desired_prefix.split('/')[:-1]) + '/'
+
+    relevant_paths = [
+        path.replace(desired_prefix, '') for path in test_paths
+        if path.startswith(desired_prefix) and path.replace(
+                desired_prefix, ''
+        ).startswith(secondary_filter)
+    ]
+
+    output = sorted(set([
+        '                           PRE {}/'.format(path.split('/')[0])
+        for path in relevant_paths if len(path.split('/')) > 1
+    ]) | set([
+        '2018-01-20 11:31:10       1000 {}'.format(path.split('/')[0])
+        for path in relevant_paths if len(path.split('/')) == 1
+    ]))
+
+    if not output:
+        sys.exit(1)
+    else:
+        for line in output:
+            print(line)
