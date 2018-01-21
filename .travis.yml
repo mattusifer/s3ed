@@ -22,7 +22,7 @@ install:
   - $EMACS -Q --batch -L . -f batch-byte-compile dash.el
   - $EMACS --version
 script:
-  - make tramps3-travis-test
+  - make tramps3-test
 notifications:
   email:
     # Default is change, but that includes a new branch's 1st success.
