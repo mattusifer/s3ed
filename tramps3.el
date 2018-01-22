@@ -5,9 +5,8 @@
 ;; Author: Matt Usifer <mattusifer@gmail.com>
 ;; Version: 0.1.0
 ;; Keywords: s3 tools
+;; Package-Requires: ((emacs "24.4") (seq) (dash))
 ;; Homepage: https://github.com/mattusifer/tramps3
-
-;; Tramps3 requires at least GNU Emacs 24.4
 
 ;; Tramps3 is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -32,14 +31,12 @@
 
 (require 'tramps3-mode)
 
-(defconst tramps3--minimal-emacs "24.4")
-
 ;; define the two entry points to tramps3 - tramps3-find-file and tramps3-save-file
 
 (defun tramps3-find-file ()
   "Open tramps3 buffer at input-file.  Will be a refreshed dired buffer if it is a directory."
   (interactive)
-  (let* ((current-s3-base-path (if (is-tramps3-mode-active)
+  (let* ((current-s3-base-path (if (tramps3-is-active)
                                    (tramps3-local-path-to-s3-path default-directory)
                                  "s3://"))
          (current-s3-file-path (tramps3-completing-read current-s3-base-path "Find S3 file"))
@@ -48,13 +45,12 @@
     (unless (tramps3-is-directory current-s3-file-path)
       (tramps3-s3-cp (tramps3-local-path-to-s3-path current-local-file-path) current-local-file-path))
     (tramps3-refresh-directory current-local-file-path)
-    (find-file current-local-file-path)
-    (tramps3-mode)))
+    (find-file current-local-file-path)))
 
 (defun tramps3-save-file ()
   "Save input file to s3."
   (interactive)
-  (let* ((current-s3-base-path (if (is-tramps3-mode-active)
+  (let* ((current-s3-base-path (if (tramps3-is-active)
                                    (tramps3-local-path-to-s3-path default-directory)
                                  "s3://"))
          (current-s3-file-path (tramps3-completing-read current-s3-base-path "Save S3 file"))
@@ -62,13 +58,7 @@
     (write-file current-local-file-path)
     (tramps3-s3-cp current-local-file-path current-s3-file-path)
     (tramps3-refresh-directory current-local-file-path)
-    (find-file current-local-file-path)
-    (tramps3-mode)))
-
-(when (and after-init-time
-           (version< emacs-version tramps3--minimal-emacs))
-  (display-warning 'tramps3 (format "Tramps3 requires Emacs >= %s, you are using %s."
-                                    tramps3--minimal-emacs emacs-version)))
+    (find-file current-local-file-path)))
 
 (provide 'tramps3)
 
