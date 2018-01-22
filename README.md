@@ -3,12 +3,21 @@
 Tramps3 provides an interface to [Amazon S3](https://aws.amazon.com/s3/) from within Emacs. Tramps3 is inspired by [TRAMP](https://www.emacswiki.org/emacs/TrampMode), and strives to provide near-seamless access to S3 from standard Emacs functions.
 
 ## Usage
+
+Initialize tramps3
+```elisp
+(require 'tramps3)
+(tramps3-mode)
+```
+
 There are two main entry-points to tramps3. The first is the `tramps3-find-file` function - a replacement for `find-file`, but for s3. The second is the `tramps3-save-file` function - a replacement for `save-file` (or `write-file`), but for s3. I have these functions bound as follows:
 
 ```elisp
 (global-set-key (kbd "C-c s f") 'tramps3-find-file)
 (global-set-key (kbd "C-c s s") 'tramps3-save-file)
 ```
+
+Note that you can leave `tramps3-mode` off by default - both of the above commands will provide an option to enable it for your current session.
 
 ### Opening files with `tramps3-find-file`
 
