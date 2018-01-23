@@ -71,11 +71,17 @@
                                       :msg msg)))
 
 ;; local filesystem functions
+(defun tramps3-file-exists (path)
+  "Check that PATH exists."
+  (condition-case nil
+      (progn (tramps3-shell-command-no-message (format "file %s" path)) t)
+    (error nil)))
 
 (defun tramps3-mkdirs (paths)
   "Create directories at the given PATHS."
-  (tramps3-shell-command-no-message (format "mkdir -p %s" (mapconcat 'identity paths " "))
-                                    :msg "tramps3: Creating local directories..."))
+  (dolist (subgroup (-partition-all 100 paths))
+    (tramps3-shell-command-no-message (format "mkdir -p %s" (mapconcat 'identity subgroup " "))
+                                      :msg "tramps3: Creating local directories...")))
 
 (defun tramps3-create-empty-file (filename)
   "Create FILENAME if it doesn't exist."
@@ -84,9 +90,15 @@
 
 (defun tramps3-create-empty-files (filenames)
   "Create all files in FILENAMES if they don't exist."
-  (tramps3-shell-command-no-message (format "touch %s"
-                                            (mapconcat 'identity filenames " "))
-                                    :msg "tramps3: Creating dummy files..."))
+  (dolist (subgroup (-partition-all 100 filenames))
+    (tramps3-shell-command-no-message (format "touch %s"
+                                              (mapconcat 'identity subgroup " "))
+                                      :msg "tramps3: Creating dummy files...")))
+
+(defun tramps3-clear-tmp-dir ()
+  "Clear out the tramps3 tmp directory."
+  (when (tramps3-file-exists tramps3-tmp-s3-dir)
+    (tramps3-shell-command-no-message (format "rm -r %s" tramps3-tmp-s3-dir))))
 
 ;; validation
 
@@ -141,11 +153,11 @@
          (new-files (-map (lambda (f) (tramps3-s3-path-to-local-path f))
                           (car (-take-last 1 organized-file-list)))))
 
-    ;; clear out local directory
-    (when (tramps3-is-directory s3-directory)
-      (when (tramps3-is-directory current-directory)
-        (delete-directory current-directory t))
-      (make-directory current-directory t))
+    ;; reset local tmp directory
+    (tramps3-clear-tmp-dir)
+    (if (tramps3-is-directory s3-directory)
+        (make-directory current-directory t)
+      (make-directory (tramps3-parent-directory current-directory) t))
 
     ;; rebuild from files s3
     (when new-dirs (tramps3-mkdirs new-dirs))
