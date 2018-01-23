@@ -59,7 +59,7 @@ Otherwise, backspace will go up one directory."
   (if (not (tramps3-is-root-s3-path cur-base))
       (condition-case nil
           ;; use normal backspace behavior if no error was found
-          (backward-delete-char 1)
+        (backward-delete-char 1)
 
         ;; if an error was found, we are at the beginning of the
         ;; line. Recurse to the parent directory of the current path.
@@ -72,22 +72,27 @@ Otherwise, backspace will go up one directory."
 (defun tramps3-completing-read (base msg)
   "Use ‘completing-read’ to find files in s3 starting at BASE.
 MSG will be displayed to the user at prompt."
-  (let* ((choices (seq-remove (lambda (el) (not el)) (tramps3-s3-ls base)))
-         (choice (minibuffer-with-setup-hook
-                     (lambda ()
-                       (define-key (current-local-map) (kbd "<backspace>")
-                         (lambda () (interactive) (tramps3-completing-read-backspace base))))
-                   (catch 'backspace (completing-read (format "%s: %s" msg base) choices)))))
+  (if (tramps3-string-starts-with base tramps3-s3-uri-scheme)
+      (let* ((choices (seq-remove (lambda (el) (not el)) (tramps3-s3-ls base)))
+             (choice (minibuffer-with-setup-hook
+                         (lambda ()
+                           (define-key (current-local-map) (kbd "<backspace>")
+                             (lambda () (interactive) (tramps3-completing-read-backspace base))))
+                       (catch 'backspace (completing-read (format "%s: %s" msg base) choices)))))
 
-    ;; no choice means a backspace was entered, recurse upwards
-    (if (not choice)
-        (tramps3-completing-read (concat (mapconcat 'identity (butlast (butlast (split-string base "/"))) "/") "/")
-                               msg)
-      (if (seq-contains choices choice)
-          (if (and (not (string-match "/\\'" choice)))
-              (concat base choice)
-            (tramps3-completing-read (concat base choice) msg))
-        (concat base choice)))))
+        ;; no choice means a backspace was entered, recurse upwards
+        (if (not choice)
+            (tramps3-completing-read (concat (mapconcat 'identity (butlast (butlast (split-string base "/"))) "/") "/")
+                                     msg)
+          (if (seq-contains choices choice)
+              (if (and (not (string-match "/\\'" choice)))
+                  (concat base choice)
+                (tramps3-completing-read (concat base choice) msg))
+            (concat base choice))))
+    (let* ((choice (completing-read (format "%s: %s" msg base) `(,tramps3-s3-uri-scheme "Elsewhere"))))
+      (if (tramps3-is-root-s3-path choice)
+          (tramps3-completing-read choice msg)
+        (read-file-name (format "%s: " msg) "")))))
 
 (provide 'tramps3-util)
 

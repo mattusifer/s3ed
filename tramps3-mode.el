@@ -120,17 +120,26 @@ The original function and arguments are available as ORIG-DIRED-DO-COPY and ARGS
   (if (tramps3-is-active)
       (let* ((current-local-file (dired-get-filename))
              (current-s3-file (tramps3-local-path-to-s3-path current-local-file))
-             (current-s3-parent-dir (tramps3-parent-directory current-s3-file)))
-        (-when-let* ((dest-s3-file (tramps3-completing-read current-s3-parent-dir
-                                                            (format "Copy %s to"
-                                                                    current-s3-file)))
-                     (dest-local-file (tramps3-s3-path-to-local-path dest-s3-file)))
-          (if (tramps3-is-directory current-s3-file)
-              (copy-directory current-local-file dest-local-file)
-            (copy-file current-local-file dest-local-file))
-          (tramps3-s3-cp current-s3-file dest-s3-file (tramps3-is-directory
-                                                       current-local-file))
-          (revert-buffer t t)))
+             (dest-file (tramps3-completing-read "" (format "Copy %s to" current-s3-file))))
+        (if (tramps3-string-starts-with dest-file tramps3-s3-uri-scheme)
+            (let ((dest-local-file (tramps3-s3-path-to-local-path dest-file)))
+              (make-directory (tramps3-parent-directory dest-local-file) t)
+              (if (tramps3-is-directory current-s3-file)
+                  (copy-directory current-local-file dest-local-file)
+                (copy-file current-local-file dest-local-file))
+              (tramps3-s3-cp current-s3-file dest-file (tramps3-is-directory
+                                                           current-local-file)))
+          (progn
+            (tramps3-s3-cp current-s3-file current-local-file (tramps3-is-directory
+                                                               current-local-file))
+            (if (tramps3-is-directory current-local-file)
+                (progn
+                  (copy-directory current-local-file dest-file)
+                  (dired dest-file))
+              (progn
+                (copy-file current-local-file dest-file)
+                (dired (tramps3-parent-directory dest-file))))))
+        (revert-buffer t t))
     (apply orig-dired-do-copy args)))
 (advice-add 'dired-do-copy :around #'tramps3-dired-do-s3-copy)
 
