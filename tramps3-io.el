@@ -1,7 +1,5 @@
 ;;; tramps3-io.el --- I/O operations both locally and on s3
 
-;; Copyright (C) 2018 Matt Usifer
-
 ;; Author: Matt Usifer <mattusifer@gmail.com>
 
 ;; Tramps3 is free software; you can redistribute it and/or modify

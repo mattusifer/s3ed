@@ -1,9 +1,5 @@
 ;;; tramps3-tests.el --- tests for tramps3
 
-;; Copyright (C) 2018  Matt Usifer
-;;
-;; License: GPLv3
-
 ;;; Code:
 
 (require 'dash)

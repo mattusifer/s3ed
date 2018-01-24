@@ -1,7 +1,5 @@
 ;;; tramps3.el --- Tramp-like access to s3
 
-;; Copyright (C) 2018 Matt Usifer
-
 ;; Author: Matt Usifer <mattusifer@gmail.com>
 ;; Version: 0.1.0
 ;; Keywords: s3 tools
