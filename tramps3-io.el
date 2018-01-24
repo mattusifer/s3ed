@@ -29,8 +29,8 @@
 (defconst tramps3-app-name "tramps3")
 (defconst tramps3-tmp-s3-dir (concat "/tmp/" tramps3-app-name))
 
-(defconst tramps3-pipeable-commands
-  '("head" "cat" "grep" "tail" "sed" "awk" "cut" "wc" "sort" "tr" "uniq"))
+(defconst tramps3-streamable-commands
+  '("head" "cat" "grep" "tail" "sed" "awk" "cut" "wc" "sort" "tr" "uniq" "lbzcat" "gzcat"))
 
 ;; s3 functions
 
@@ -63,9 +63,10 @@
           (message msg))
       (tramps3-shell-command-no-message command :msg msg))))
 
-(defun tramps3-s3-cp-pipe (src command &optional async)
+(defun tramps3-s3-cp-streams (srcs command &optional async)
   "Copy s3 SRC file to DEST.  If specified, this will be a RECURSIVE operation."
-  (let ((command (format "aws s3 cp %s - | %s" src command)))
+  (let ((command (format "(%s) | %s" (mapconcat 'identity (--map (format "aws s3 cp %s -;" it)
+                                                                 srcs) " ") command)))
     (if async
         (async-shell-command command)
         (shell-command command))))
