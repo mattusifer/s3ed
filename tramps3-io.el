@@ -31,13 +31,17 @@
 (defconst tramps3-app-name "tramps3")
 (defconst tramps3-tmp-s3-dir (concat "/tmp/" tramps3-app-name))
 
+(defconst tramps3-pipeable-commands
+  '("head" "cat" "grep" "tail" "sed" "awk" "cut" "wc" "sort" "tr" "uniq"))
+
 ;; s3 functions
 
-(defun tramps3-get-transfer-message (src dest)
+(defun tramps3-get-transfer-message (src dest async)
   "Get message to display when transferring data from SRC to DEST."
-  (format "%s: Transferring data %s s3..." tramps3-app-name
+  (format "%s: Transferring data %s s3%s..." tramps3-app-name
           (if (tramps3-is-s3-path src) (if (tramps3-is-s3-path dest)
-                                           "within" "from") "to")))
+                                           "within" "from") "to")
+          (if async " in the background" "")))
 
 (defun tramps3-s3-ls (path)
   "List an s3 PATH."
@@ -50,25 +54,47 @@
                                     (format "aws s3 ls %s" path) t
                                     (format "%s: Listing files on s3..." tramps3-app-name)) "\n")))))
 
-(defun tramps3-s3-cp (src dest &optional recursive)
+(defun tramps3-s3-cp (src dest &optional recursive async)
   "Copy s3 SRC file to DEST.  If specified, this will be a RECURSIVE operation."
-  (let ((msg (tramps3-get-transfer-message src dest)))
-    (tramps3-shell-command-no-message (format "aws s3 cp %s --sse AES256 %s %s"
-                                              (if recursive "--recursive" "") src dest)
-                                      :msg msg)))
+  (let ((command (format "aws s3 cp %s --sse AES256 %s %s"
+                         (if recursive "--recursive" "") src dest))
+        (msg (tramps3-get-transfer-message src dest async)))
+    (if async
+        (progn
+          (apply 'start-process "tramps3-cp" "*tramps3*" (split-string command))
+          (message msg))
+      (tramps3-shell-command-no-message command :msg msg))))
 
-(defun tramps3-s3-mv (src dest &optional recursive)
+(defun tramps3-s3-cp-pipe (src command &optional async)
+  "Copy s3 SRC file to DEST.  If specified, this will be a RECURSIVE operation."
+  (let ((command (format "aws s3 cp %s - | %s" src command)))
+    (if async
+        (async-shell-command command)
+        (shell-command command))))
+
+(defun tramps3-s3-mv (src dest &optional recursive async)
   "Move s3 SRC file to DEST.  If specified, this will be a RECURSIVE operation."
-  (let ((msg (tramps3-get-transfer-message src dest)))
-    (tramps3-shell-command-no-message (format "aws s3 mv %s --sse AES256 %s %s"
-                                              (if recursive "--recursive" "") src dest)
-                                      :msg msg)))
+  (let ((command (format "aws s3 mv %s --sse AES256 %s %s"
+                         (if recursive "--recursive" "") src dest))
+        (msg (tramps3-get-transfer-message src dest async)))
+    (if async
+        (progn
+          (apply 'start-process "tramps3-mv" "*tramps3*" (split-string command))
+          (message msg))
+      (tramps3-shell-command-no-message command :msg msg))))
 
-(defun tramps3-s3-rm (path &optional recursive)
+(defun tramps3-s3-rm (path &optional recursive async)
   "Remove file or directory PATH from s3. If specified, this will be a RECURSIVE operation."
-  (let ((msg (format "%s: Removing data from s3..." tramps3-app-name)))
-    (tramps3-shell-command-no-message (format "aws s3 rm %s %s" (if recursive "--recursive" "") path)
-                                      :msg msg)))
+  (let ((msg (format "%s: Removing data from s3%s..." tramps3-app-name
+                     (if async " in the background" "")))
+        (command (format "aws s3 rm %s %s" (if recursive "--recursive" "") path)))
+    (if async
+        (progn
+          (apply 'start-process "tramps3-rm" "*tramps3*" (split-string command))
+          (message msg))
+        (tramps3-shell-command-no-message command :msg msg))))
+
+
 
 ;; local filesystem functions
 (defun tramps3-file-exists (path)
