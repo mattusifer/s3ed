@@ -63,11 +63,10 @@ The original function and arguments are available as ORIG-DIRED-DO-DELETE and AR
                  (y-or-n-p (format "Recursively delete %s? " current-s3-file)))
             (progn
               (delete-directory current-local-file t)
-              (tramps3-s3-rm current-s3-file t))
+              (tramps3-s3-rm current-s3-file t t))
           (progn
             (delete-file current-local-file)
-            (tramps3-s3-rm current-s3-file)))
-        (revert-buffer t t)))
+            (tramps3-s3-rm current-s3-file nil t)))))
     (apply orig-dired-do-delete args)))
 (advice-add 'dired-do-delete :around #'tramps3-dired-do-s3-delete)
 
@@ -83,8 +82,7 @@ The original function and arguments are available as ORIG-DIRED-DO-FLAGGED-DELET
                        (y-or-n-p (format "Recursively delete %s? " current-s3-file)))
                   (delete-directory current-local-file t)
                 (delete-file current-local-file))
-              (tramps3-s3-rm current-s3-file (tramps3-is-directory current-local-file))
-              (revert-buffer t t)))))
+              (tramps3-s3-rm current-s3-file (tramps3-is-directory current-local-file) t)))))
     (apply orig-dired-do-flagged-delete args)))
 (advice-add 'dired-do-flagged-delete :around #'tramps3-dired-do-s3-flagged-delete)
 
@@ -108,9 +106,8 @@ The original function and arguments are available as ORIG-DIRED-DO-RENAME and AR
                                                                     current-s3-file)))
                      (dest-local-file (tramps3-s3-path-to-local-path dest-s3-file)))
           (rename-file current-local-file dest-local-file t)
-          (tramps3-s3-mv current-s3-file dest-s3-file (tramps3-is-directory
-                                                       current-local-file))
-          (revert-buffer t t)))
+          (tramps3-s3-mv current-s3-file dest-s3-file
+                         (tramps3-is-directory current-local-file) t)))
     (apply orig-dired-do-rename args)))
 (advice-add 'dired-do-rename :around #'tramps3-dired-do-s3-rename)
 
@@ -127,19 +124,18 @@ The original function and arguments are available as ORIG-DIRED-DO-COPY and ARGS
               (if (tramps3-is-directory current-s3-file)
                   (copy-directory current-local-file dest-local-file)
                 (copy-file current-local-file dest-local-file))
-              (tramps3-s3-cp current-s3-file dest-file (tramps3-is-directory
-                                                           current-local-file)))
+              (tramps3-s3-cp current-s3-file dest-file
+                             (tramps3-is-directory current-local-file) t))
           (progn
-            (tramps3-s3-cp current-s3-file current-local-file (tramps3-is-directory
-                                                               current-local-file))
+            (tramps3-s3-cp current-s3-file current-local-file
+                           (tramps3-is-directory current-local-file))
             (if (tramps3-is-directory current-local-file)
                 (progn
                   (copy-directory current-local-file dest-file)
                   (dired dest-file))
               (progn
                 (copy-file current-local-file dest-file)
-                (dired (tramps3-parent-directory dest-file))))))
-        (revert-buffer t t))
+                (dired (tramps3-parent-directory dest-file)))))))
     (apply orig-dired-do-copy args)))
 (advice-add 'dired-do-copy :around #'tramps3-dired-do-s3-copy)
 
@@ -157,6 +153,34 @@ The original function and arguments are available as ORIG-DIRED-FIND-FILE and AR
             (apply orig-dired-find-file args))))
     (apply orig-dired-find-file args)))
 (advice-add 'dired-find-file :around #'tramps3-dired-find-s3-file)
+
+(defun tramps3-dired-do-shell-command (orig-dired-do-shell-command &rest args)
+  "A wrapper around dired's ‘dired-do-shell-command’ function.
+The original function and arguments are available as ORIG-DIRED-FIND-FILE and ARGS."
+  (if (tramps3-is-active)
+      (let* ((current-local-file (dired-get-filename))
+             (current-s3-file (tramps3-local-path-to-s3-path current-local-file)))
+        (if (seq-contains tramps3-pipeable-commands (car (split-string (car args))))
+            (if (tramps3-is-directory current-local-file)
+                (message (format "%s: This command cannot be applied to an s3 directory" tramps3-app-name))
+              (tramps3-s3-cp-pipe current-s3-file (car args)))
+          (message (format "%s: This command is not supported by %s" tramps3-app-name tramps3-app-name))))
+    (apply orig-dired-do-shell-command args)))
+(advice-add 'dired-do-shell-command :around #'tramps3-dired-do-shell-command)
+
+(defun tramps3-dired-do-async-shell-command (orig-dired-do-async-shell-command &rest args)
+  "A wrapper around dired's ‘dired-do-async-shell-command’ function.
+The original function and arguments are available as ORIG-DIRED-FIND-FILE and ARGS."
+  (if (tramps3-is-active)
+      (let* ((current-local-file (dired-get-filename))
+             (current-s3-file (tramps3-local-path-to-s3-path current-local-file)))
+        (if (seq-contains tramps3-pipeable-commands (car (split-string (car args))))
+            (if (tramps3-is-directory current-local-file)
+                (message (format "%s: This command cannot be applied to an s3 directory" tramps3-app-name))
+              (tramps3-s3-cp-pipe current-s3-file (car args) t))
+          (message (format "%s: This command is not supported by %s" tramps3-app-name tramps3-app-name))))
+    (apply orig-dired-do-async-shell-command args)))
+(advice-add 'dired-do-async-shell-command :around #'tramps3-dired-do-async-shell-command)
 
 (define-minor-mode tramps3-mode
   "Minor mode for tramps3"

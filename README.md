@@ -30,6 +30,7 @@ If you select a directory with `tramps3-find-file`, the directory will open in d
 - Deleting files and directories, marking files and directories for deletion
 - Refreshing the directory
 - Opening files and directories (including opening and editing compressed files, like in normal dired mode)
+- Common shell commands
 
 **Keep in mind** - Other normal dired commands will work, and the resulting changes to the local dir will not be propogated to s3.
 
