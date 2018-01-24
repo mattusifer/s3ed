@@ -45,7 +45,7 @@
           (tramps3-s3-cp (tramps3-local-path-to-s3-path current-local-file-path) current-local-file-path))
         (tramps3-refresh-directory current-local-file-path)
         (find-file current-local-file-path))
-    (when (y-or-n-p "Tramps3 mode is disabled, do you want to enable tramps3?")
+    (when (y-or-n-p "Tramps3 mode is disabled, do you want to enable tramps3? ")
       (tramps3-mode)
       (tramps3-find-file))))
 
@@ -62,7 +62,7 @@
         (tramps3-s3-cp current-local-file-path current-s3-file-path)
         (tramps3-refresh-directory current-local-file-path)
         (find-file current-local-file-path))
-    (when (y-or-n-p "Tramps3 mode is disabled, do you want to enable tramps3?")
+    (when (y-or-n-p "Tramps3 mode is disabled, do you want to enable tramps3? ")
       (tramps3-mode)
       (tramps3-save-file))))
 

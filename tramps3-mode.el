@@ -154,7 +154,7 @@ The original function and arguments are available as ORIG-DIRED-FIND-FILE and AR
 
 (defun tramps3-dired-do-shell-command (orig-dired-do-shell-command &rest args)
   "A wrapper around dired's ‘dired-do-shell-command’ function.
-The original function and arguments are available as ORIG-DIRED-FIND-FILE and ARGS."
+The original function and arguments are available as ORIG-DIRED-DO-SHELL-COMMAND and ARGS."
   (if (tramps3-is-active)
       (let* ((current-local-files (if (dired-get-marked-files) (dired-get-marked-files)
                                     `(,(dired-get-filename))))
@@ -169,7 +169,7 @@ The original function and arguments are available as ORIG-DIRED-FIND-FILE and AR
 
 (defun tramps3-dired-do-async-shell-command (orig-dired-do-async-shell-command &rest args)
   "A wrapper around dired's ‘dired-do-async-shell-command’ function.
-The original function and arguments are available as ORIG-DIRED-FIND-FILE and ARGS."
+The original function and arguments are available as ORIG-DIRED-DO-ASYNC-SHELL-COMMAND and ARGS."
   (if (tramps3-is-active)
       (let* ((current-local-files (if (dired-get-marked-files) (dired-get-marked-files)
                                     `(,(dired-get-filename))))

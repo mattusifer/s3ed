@@ -25,6 +25,7 @@
 (defconst tramps3-s3-uri-scheme "s3://")
 
 (defun tramps3-is-root-s3-path (path)
+  "Check if PATH is at the root of s3."
   (equal path tramps3-s3-uri-scheme))
 
 (defun tramps3-string-starts-with (s prefix)
