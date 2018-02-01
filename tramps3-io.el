@@ -93,14 +93,7 @@
           (message msg))
         (tramps3-shell-command-no-message command :msg msg))))
 
-
-
 ;; local filesystem functions
-(defun tramps3-file-exists (path)
-  "Check that PATH exists."
-  (condition-case nil
-      (progn (tramps3-shell-command-no-message (format "file %s" path)) t)
-    (error nil)))
 
 (defun tramps3-mkdirs (paths)
   "Create directories at the given PATHS."
@@ -120,10 +113,20 @@
                                               (mapconcat 'identity subgroup " "))
                                       :msg "tramps3: Creating dummy files...")))
 
+(defun tramps3-rm (file-or-directory)
+  "Recursively remove FILE-OR-DIRECTORY.
+This will only run if FILE-OR-DIRECTORY is in the tramps3-tmp-s3-dir."
+  (when (tramps3-string-starts-with input-dir tramps3-tmp-s3-dir)
+    (shell-command (format "rm -rf %s" file-or-directory))))
+
 (defun tramps3-clear-tmp-dir ()
-  "Clear out the tramps3 tmp directory."
-  (when (tramps3-file-exists tramps3-tmp-s3-dir)
-    (tramps3-shell-command-no-message (format "rm -r %s" tramps3-tmp-s3-dir))))
+  "Clear out the tramps3 tmp directory if no tramps3 buffers are open."
+  (when (and (file-exists-p tramps3-tmp-s3-dir)
+             (= 0 (length (--filter (tramps3-string-starts-with it tramps3-tmp-s3-dir)
+                                    (--map (car (cdr (split-string (with-current-buffer it
+                                                                     (pwd)))))
+                                           (buffer-list))))))
+    (tramps3-rm tramps3-tmp-s3-dir)))
 
 ;; validation
 
@@ -171,15 +174,16 @@
          (s3-directory (tramps3-local-path-to-s3-path current-directory))
          (file-list (-filter (lambda (f) f) (tramps3-s3-ls s3-directory)))
          (full-s3-paths (-map (lambda (file) (concat s3-directory file))
-                                 file-list))
+                              file-list))
          (organized-file-list (--separate (tramps3-is-directory it) full-s3-paths))
          (new-dirs (-map (lambda (f) (tramps3-s3-path-to-local-path f))
                          (car organized-file-list)))
          (new-files (-map (lambda (f) (tramps3-s3-path-to-local-path f))
                           (car (-take-last 1 organized-file-list)))))
 
-    ;; reset local tmp directory
+    ;; reset local tmp directory and delete the current directory
     (tramps3-clear-tmp-dir)
+    (tramps3-rm input-dir)
     (if (tramps3-is-directory s3-directory)
         (make-directory current-directory t)
       (make-directory (tramps3-parent-directory current-directory) t))
