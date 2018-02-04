@@ -6,34 +6,34 @@ define INIT_PACKAGE_EL
 endef
 export INIT_PACKAGE_EL
 
-tramps3-lint:
+s3ed-lint:
 	emacs -Q -batch \
 		 --eval "$${INIT_PACKAGE_EL}"	 \
-		 -l tramps3-util.el		 \
-		 -l tramps3-io.el		 \
-		 -l tramps3-mode.el		 \
-		 -l tramps3.el			 \
+		 -l s3ed-util.el		 \
+		 -l s3ed-io.el		 \
+		 -l s3ed-mode.el		 \
+		 -l s3ed.el			 \
 		 -f package-lint-batch-and-exit	 \
-		 tramps3.el tramps3-util.el tramps3-io.el tramps3-mode.el tramps3.el test/tramps3-tests.el
+		 s3ed.el s3ed-util.el s3ed-io.el s3ed-mode.el s3ed.el test/s3ed-tests.el
 
-tramps3-test:
+s3ed-test:
 	export PATH=${PWD}/test/:$$PATH &&		 \
 		emacs -batch -l ert			 \
 			--eval "$${INIT_PACKAGE_EL}"     \
-			-l tramps3-util.el		 \
-			-l tramps3-io.el		 \
-			-l tramps3-mode.el		 \
-			-l tramps3.el			 \
-			-l test/tramps3-tests.el	 \
+			-l s3ed-util.el		 \
+			-l s3ed-io.el		 \
+			-l s3ed-mode.el		 \
+			-l s3ed.el			 \
+			-l test/s3ed-tests.el	 \
 			-f ert-run-tests-batch-and-exit
 
-tramps3-travis-test:
+s3ed-travis-test:
 	export PATH=${PWD}/test/:$$PATH &&		 \
 		${EMACS} -Q --batch -L ${PWD}		 \
 			-l ert				 \
-			-l tramps3-util.el		 \
-			-l tramps3-io.el		 \
-			-l tramps3-mode.el		 \
-			-l tramps3.el			 \
-			-l test/tramps3-tests.el	 \
+			-l s3ed-util.el		 \
+			-l s3ed-io.el		 \
+			-l s3ed-mode.el		 \
+			-l s3ed.el			 \
+			-l test/s3ed-tests.el	 \
 			-f ert-run-tests-batch-and-exit

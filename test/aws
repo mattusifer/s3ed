@@ -8,15 +8,15 @@ AWS_APP = sys.argv[1]
 AWS_OPERATION = sys.argv[2]
 AWS_ARGS = sys.argv[3:]
 
-BASE_DIR = '/tmp/tramps3-aws-testing'
+BASE_DIR = '/tmp/s3ed-aws-testing'
 
 test_paths = [
-    's3://tramps3/testdir/testfile',
-    's3://tramps3/testfile',
-    's3://tramps3/test/subdir/another-file',
-    's3://tramps3/test/subdir/yet-another-file',
-    's3://tramps3/test/subdir/yet-another-dir/deepest-level',
-    's3://another-bucket/tramps3',
+    's3://s3ed/testdir/testfile',
+    's3://s3ed/testfile',
+    's3://s3ed/test/subdir/another-file',
+    's3://s3ed/test/subdir/yet-another-file',
+    's3://s3ed/test/subdir/yet-another-dir/deepest-level',
+    's3://another-bucket/s3ed',
     's3://another-bucket/dir-in-another-bucket/key',
     's3://another-bucket/dir2-in-another-bucket/key'
 ]
