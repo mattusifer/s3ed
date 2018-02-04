@@ -103,12 +103,14 @@
 
 (defun tramps3-create-empty-file (filename)
   "Create FILENAME if it doesn't exist."
-  (tramps3-shell-command-no-message (format "touch %s" filename)
+  (tramps3-shell-command-no-message (format "mkdir -p %s && touch %s" (tramps3-parent-directory filename)
+                                            filename)
                                     :msg "tramps3: Creating dummy file..."))
 
 (defun tramps3-create-empty-files (filenames)
   "Create all files in FILENAMES if they don't exist."
   (dolist (subgroup (-partition-all 100 filenames))
+    (tramps3-mkdirs (--map (tramps3-parent-directory it) subgroup))
     (tramps3-shell-command-no-message (format "touch %s"
                                               (mapconcat 'identity subgroup " "))
                                       :msg "tramps3: Creating dummy files...")))
@@ -116,17 +118,8 @@
 (defun tramps3-rm (file-or-directory)
   "Recursively remove FILE-OR-DIRECTORY.
 This will only run if FILE-OR-DIRECTORY is in the tramps3-tmp-s3-dir."
-  (when (tramps3-string-starts-with input-dir tramps3-tmp-s3-dir)
+  (when (tramps3-string-starts-with file-or-directory tramps3-tmp-s3-dir)
     (shell-command (format "rm -rf %s" file-or-directory))))
-
-(defun tramps3-clear-tmp-dir ()
-  "Clear out the tramps3 tmp directory if no tramps3 buffers are open."
-  (when (and (file-exists-p tramps3-tmp-s3-dir)
-             (= 0 (length (--filter (tramps3-string-starts-with it tramps3-tmp-s3-dir)
-                                    (--map (car (cdr (split-string (with-current-buffer it
-                                                                     (pwd)))))
-                                           (buffer-list))))))
-    (tramps3-rm tramps3-tmp-s3-dir)))
 
 ;; validation
 
@@ -163,39 +156,50 @@ This will only run if FILE-OR-DIRECTORY is in the tramps3-tmp-s3-dir."
 (defun tramps3-parent-directory (path)
   "Get parent directory path of PATH."
   (if (tramps3-string-ends-with path "/")
-      (concat (mapconcat 'identity(-drop-last 2 (split-string path "/")) "/") "/")
+      (concat (mapconcat 'identity (-drop-last 2 (split-string path "/")) "/") "/")
     (concat (mapconcat 'identity (-drop-last 1 (split-string path "/")) "/") "/")))
 
 ;; working with files
 
-(defun tramps3-refresh-directory (&optional input-dir)
-  "Refresh INPUT-DIR from s3. If no input dir is specified, PWD will be used."
-  (let* ((current-directory (if input-dir input-dir (nth 1 (split-string (pwd)))))
-         (s3-directory (tramps3-local-path-to-s3-path current-directory))
-         (file-list (-filter (lambda (f) f) (tramps3-s3-ls s3-directory)))
-         (full-s3-paths (-map (lambda (file) (concat s3-directory file))
-                              file-list))
-         (organized-file-list (--separate (tramps3-is-directory it) full-s3-paths))
-         (new-dirs (-map (lambda (f) (tramps3-s3-path-to-local-path f))
-                         (car organized-file-list)))
-         (new-files (-map (lambda (f) (tramps3-s3-path-to-local-path f))
-                          (car (-take-last 1 organized-file-list)))))
+(defun tramps3-refresh-tmp-dir (&optional input-dir)
+  "Refresh all active tramps3 buffers, including INPUT-DIR if provided."
+  (let* ((all-active-files-dirs (--map (with-current-buffer it (if (tramps3-is-dired-active)
+                                                                   default-directory
+                                                                 buffer-file-name))
+                                       (buffer-list)))
+         (all-tramps3-files-dirs (--separate (tramps3-is-directory
+                                              (tramps3-local-path-to-s3-path it))
+                                             (--filter (tramps3-string-starts-with
+                                                        it tramps3-tmp-s3-dir)
+                                                       (add-to-list 'all-active-files-dirs
+                                                                    input-dir))))
+         (active-directory (condition-case nil (if (tramps3-is-dired-active) default-directory
+                                                          (tramps3-parent-directory buffer-file-name))
+                                      (error nil))))
+    (when active-directory (make-directory active-directory t))
+    (tramps3-rm tramps3-tmp-s3-dir)
 
-    ;; reset local tmp directory and delete the current directory
-    (tramps3-clear-tmp-dir)
-    (tramps3-rm input-dir)
-    (if (tramps3-is-directory s3-directory)
-        (make-directory current-directory t)
-      (make-directory (tramps3-parent-directory current-directory) t))
+    (dolist (current-directory (car all-tramps3-files-dirs))
+      (make-directory current-directory t)
+      (when (or (equal current-directory active-directory) (equal current-directory input-dir))
+          (let* ((s3-directory (tramps3-local-path-to-s3-path current-directory))
+                 (file-list (-filter (lambda (f) f) (tramps3-s3-ls s3-directory)))
+                 (full-s3-paths (-map (lambda (file) (concat s3-directory file))
+                                      file-list))
+                 (organized-file-list (--separate (tramps3-is-directory it) full-s3-paths))
+                 (s3-dirs (-map (lambda (f) (tramps3-s3-path-to-local-path f))
+                                (car organized-file-list)))
+                 (s3-files (-map (lambda (f) (tramps3-s3-path-to-local-path f))
+                                 (car (-take-last 1 organized-file-list)))))
 
-    ;; rebuild from files s3
-    (when new-dirs (tramps3-mkdirs new-dirs))
-    (when new-files (tramps3-create-empty-files new-files))
+            ;; reset local tmp directory and delete the current directory
+            ;; rebuild from files s3
+            (when s3-dirs (tramps3-mkdirs s3-dirs))
+            (when s3-files (tramps3-create-empty-files s3-files)))))
 
-    ;; revert the buffer if necessary
-    (when (and (not (tramps3-is-dired-active))
-               (equal (buffer-file-name) input-dir))
-      (revert-buffer t t))))
+    (dolist (current-file (car (-take-last 1 all-tramps3-files-dirs)))
+      (let ((s3-file (tramps3-local-path-to-s3-path current-file)))
+        (tramps3-s3-cp s3-file current-file)))))
 
 (provide 'tramps3-io)
 

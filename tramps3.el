@@ -32,19 +32,24 @@
 ;; define the two entry points to tramps3 - tramps3-find-file and tramps3-save-file
 
 (defun tramps3-find-file ()
-  "Open tramps3 buffer at input-file.  Will be a refreshed dired buffer if it is a directory."
+  "Open tramps3 buffer at input-file.
+Will be a refreshed dired buffer if it is a directory."
   (interactive)
   (if tramps3-mode
       (let* ((current-s3-base-path (if (tramps3-is-active)
                                        (tramps3-local-path-to-s3-path default-directory)
                                      "s3://"))
-             (current-s3-file-path (tramps3-completing-read current-s3-base-path "Find S3 file"))
-             (current-local-base-path (tramps3-s3-path-to-local-path current-s3-base-path))
+             (current-s3-file-path (tramps3-completing-read current-s3-base-path
+                                                            "Find S3 file"))
              (current-local-file-path (tramps3-s3-path-to-local-path current-s3-file-path)))
-        (unless (tramps3-is-directory current-s3-file-path)
-          (tramps3-s3-cp (tramps3-local-path-to-s3-path current-local-file-path) current-local-file-path))
-        (tramps3-refresh-directory current-local-file-path)
-        (find-file current-local-file-path))
+        (if (tramps3-is-directory current-s3-file-path)
+            (progn
+              (tramps3-refresh-tmp-dir current-local-file-path)
+              (dired current-local-file-path))
+          (progn
+            (tramps3-s3-cp (tramps3-local-path-to-s3-path current-local-file-path)
+                           current-local-file-path)
+            (find-file current-local-file-path))))
     (when (y-or-n-p "Tramps3 mode is disabled, do you want to enable tramps3? ")
       (tramps3-mode)
       (tramps3-find-file))))
@@ -60,7 +65,7 @@
              (current-local-file-path (tramps3-s3-path-to-local-path current-s3-file-path)))
         (write-file current-local-file-path)
         (tramps3-s3-cp current-local-file-path current-s3-file-path)
-        (tramps3-refresh-directory current-local-file-path)
+        (tramps3-refresh-tmp-dir)
         (find-file current-local-file-path))
     (when (y-or-n-p "Tramps3 mode is disabled, do you want to enable tramps3? ")
       (tramps3-mode)
