@@ -174,8 +174,10 @@ This will only run if FILE-OR-DIRECTORY is in the tramps3-tmp-s3-dir."
                                                        (add-to-list 'all-active-files-dirs
                                                                     input-dir)))))
     (tramps3-rm tramps3-tmp-s3-dir)
-    (make-directory (if (tramps3-is-dired-active) default-directory
-                      (tramps3-parent-directory buffer-file-name)) t)
+    (if-let (active-directory (condition-case nil (if (tramps3-is-dired-active) default-directory
+                                                    (tramps3-parent-directory buffer-file-name))
+                                (error nil)))
+        (make-directory active-directory t))
     (dolist (current-directory (car all-tramps3-files-dirs))
       (make-directory current-directory t)
       (let* ((s3-directory (tramps3-local-path-to-s3-path current-directory))
