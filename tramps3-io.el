@@ -172,28 +172,30 @@ This will only run if FILE-OR-DIRECTORY is in the tramps3-tmp-s3-dir."
                                              (--filter (tramps3-string-starts-with
                                                         it tramps3-tmp-s3-dir)
                                                        (add-to-list 'all-active-files-dirs
-                                                                    input-dir)))))
+                                                                    input-dir))))
+         (active-directory (condition-case nil (if (tramps3-is-dired-active) default-directory
+                                                          (tramps3-parent-directory buffer-file-name))
+                                      (error nil))))
+    (when active-directory (make-directory active-directory t))
     (tramps3-rm tramps3-tmp-s3-dir)
-    (if-let (active-directory (condition-case nil (if (tramps3-is-dired-active) default-directory
-                                                    (tramps3-parent-directory buffer-file-name))
-                                (error nil)))
-        (make-directory active-directory t))
+
     (dolist (current-directory (car all-tramps3-files-dirs))
       (make-directory current-directory t)
-      (let* ((s3-directory (tramps3-local-path-to-s3-path current-directory))
-             (file-list (-filter (lambda (f) f) (tramps3-s3-ls s3-directory)))
-             (full-s3-paths (-map (lambda (file) (concat s3-directory file))
-                                  file-list))
-             (organized-file-list (--separate (tramps3-is-directory it) full-s3-paths))
-             (s3-dirs (-map (lambda (f) (tramps3-s3-path-to-local-path f))
-                            (car organized-file-list)))
-             (s3-files (-map (lambda (f) (tramps3-s3-path-to-local-path f))
-                             (car (-take-last 1 organized-file-list)))))
+      (when (or (equal current-directory active-directory) (equal current-directory input-dir))
+          (let* ((s3-directory (tramps3-local-path-to-s3-path current-directory))
+                 (file-list (-filter (lambda (f) f) (tramps3-s3-ls s3-directory)))
+                 (full-s3-paths (-map (lambda (file) (concat s3-directory file))
+                                      file-list))
+                 (organized-file-list (--separate (tramps3-is-directory it) full-s3-paths))
+                 (s3-dirs (-map (lambda (f) (tramps3-s3-path-to-local-path f))
+                                (car organized-file-list)))
+                 (s3-files (-map (lambda (f) (tramps3-s3-path-to-local-path f))
+                                 (car (-take-last 1 organized-file-list)))))
 
-        ;; reset local tmp directory and delete the current directory
-        ;; rebuild from files s3
-        (when s3-dirs (tramps3-mkdirs s3-dirs))
-        (when s3-files (tramps3-create-empty-files s3-files))))
+            ;; reset local tmp directory and delete the current directory
+            ;; rebuild from files s3
+            (when s3-dirs (tramps3-mkdirs s3-dirs))
+            (when s3-files (tramps3-create-empty-files s3-files)))))
 
     (dolist (current-file (car (-take-last 1 all-tramps3-files-dirs)))
       (let ((s3-file (tramps3-local-path-to-s3-path current-file)))
