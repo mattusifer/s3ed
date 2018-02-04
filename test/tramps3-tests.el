@@ -33,12 +33,12 @@
          (res (tramps3-s3-ls "s3://tramps3/")))
     (should (equal res '("test/" "testdir/" "testfile")))))
 
-(ert-deftest tramps3-refresh-directory-test ()
+(ert-deftest tramps3-refresh-tmp-dir-test ()
   (tramps3-setup-teardown-test-dir
    (let* ((inhibit-message t)
           (tramps3-tmp-s3-dir (substring tramps3-test-directory 0 -1))
           (tramps3-subdir (format "%s/tramps3/" tramps3-tmp-s3-dir)))
-     (tramps3-refresh-directory tramps3-subdir)
+     (tramps3-refresh-tmp-dir tramps3-subdir)
      (let ((organized-file-list (--separate (tramps3-is-directory
                                              (format "%s%s" tramps3-subdir it))
                                             (directory-files tramps3-subdir))))
