@@ -1,10 +1,14 @@
 #!/usr/bin/python
-
+import os
+import os.path
+import shutil
 import sys
 
 AWS_APP = sys.argv[1]
 AWS_OPERATION = sys.argv[2]
 AWS_ARGS = sys.argv[3:]
+
+BASE_DIR = '/tmp/tramps3-aws-testing'
 
 test_paths = [
     's3://tramps3/testdir/testfile',
@@ -12,8 +16,66 @@ test_paths = [
     's3://tramps3/test/subdir/another-file',
     's3://tramps3/test/subdir/yet-another-file',
     's3://tramps3/test/subdir/yet-another-dir/deepest-level',
-    's3://another-bucket/tramps3'
+    's3://another-bucket/tramps3',
+    's3://another-bucket/dir-in-another-bucket/key',
+    's3://another-bucket/dir2-in-another-bucket/key'
 ]
+
+# create test env if it doesn't exist
+if not os.path.exists(BASE_DIR):
+    for path in [p.replace('s3:/', BASE_DIR) for p in test_paths]:
+        try:
+            os.makedirs('/'.join(path.split('/')[:-1]))
+        except:
+            pass
+        with open(path.replace('s3:/', BASE_DIR), 'w') as path_f:
+            path_f.write("")
+
+
+def scratchify_path(path, create=False):
+    if create:
+        try:
+            shutil.rmtree('{}-scratch'.format(BASE_DIR))
+        except:
+            pass
+        max_depth_for_parent = -2 if path.endswith('/') else -1
+        os.makedirs('/'.join(
+            path.replace(BASE_DIR, '{}-scratch'.format(BASE_DIR)).split('/')[:max_depth_for_parent]
+        ))
+    return path.replace(BASE_DIR, '{}-scratch'.format(BASE_DIR))
+
+
+def recursive_list(directory):
+    return [
+        inner_f for f in os.listdir(directory) if os.path.isdir('{}/{}'.format(directory, f))
+        for inner_f in recursive_list('{}/{}'.format(directory, f))
+    ] + [
+        '{}/{}'.format(directory, f)
+        for f in os.listdir(directory) if not os.path.isdir('{}/{}'.format(directory, f))
+    ]
+
+
+def normalize_args(src, dest):
+    if not os.path.exists(src):
+        raise ValueError("Source path does not exist")
+
+    if os.path.isdir(src):
+        if not src.endswith('/'):
+            src = src + '/'
+        if not dest.endswith('/'):
+            dest = dest + '/'
+
+        if os.path.exists(dest):
+            dest = dest + src.split('/')[-2] + '/'
+    else:
+        if src.endswith('/'):
+            raise ValueError("Source path ends with '/' but it is not a directory")
+
+        if dest.endswith('/'):
+            dest = dest + src.split('/')[-1]
+
+    return src, dest
+
 
 if AWS_APP != 's3':
     raise ValueError(
@@ -30,14 +92,19 @@ if AWS_OPERATION == 'ls':
     if not desired_prefix.startswith('s3://'):
         desired_prefix = 's3://' + desired_prefix
 
+    if len(desired_prefix.replace('s3://', '').split('/')) == 1 and desired_prefix != 's3://':
+        desired_prefix = desired_prefix + '/'
+
     secondary_filter = ''
 
     if not desired_prefix.endswith('/'):
         secondary_filter = desired_prefix.split('/')[-1]
         desired_prefix = '/'.join(desired_prefix.split('/')[:-1]) + '/'
 
+    paths = [f.replace(BASE_DIR, 's3:/') for f in recursive_list(BASE_DIR)]
+
     relevant_paths = [
-        path.replace(desired_prefix, '') for path in test_paths
+        path.replace(desired_prefix, '') for path in paths
         if path.startswith(desired_prefix) and path.replace(
                 desired_prefix, ''
         ).startswith(secondary_filter)
@@ -45,6 +112,8 @@ if AWS_OPERATION == 'ls':
 
     output = sorted(set([
         '                           PRE {}/'.format(path.split('/')[0])
+        if desired_prefix != 's3://' else
+        '2018-01-20 11:31:10 {}'.format(path.split('/')[0])
         for path in relevant_paths if len(path.split('/')) > 1
     ]) | set([
         '2018-01-20 11:31:10       1000 {}'.format(path.split('/')[0])
@@ -56,3 +125,76 @@ if AWS_OPERATION == 'ls':
     else:
         for line in output:
             print(line)
+
+elif AWS_OPERATION == 'mv':
+    recursive = False
+    if AWS_ARGS[0] == '--recursive':
+        recursive = True
+        AWS_ARGS = AWS_ARGS[1:]
+    if AWS_ARGS[0] == '--sse':
+        AWS_ARGS = AWS_ARGS[2:]
+
+    src = AWS_ARGS[0].replace('s3:/', BASE_DIR)
+    dest = AWS_ARGS[1].replace('s3:/', BASE_DIR)
+
+    if os.path.isdir(src):
+        if not recursive:
+            raise Exception("Key {} does not exist".format(src))
+
+    src, dest = normalize_args(src, dest)
+
+    os.rename(src, scratchify_path(src, True))
+
+    try:
+        os.makedirs('/'.join(dest.split('/')[:-1]))
+    except:
+        pass
+
+    os.rename(scratchify_path(src), dest)
+
+elif AWS_OPERATION == 'cp':
+    recursive = False
+    if AWS_ARGS[0] == '--recursive':
+        recursive = True
+        AWS_ARGS = AWS_ARGS[1:]
+    if AWS_ARGS[0] == '--sse':
+        AWS_ARGS = AWS_ARGS[2:]
+
+    src = AWS_ARGS[0].replace('s3:/', BASE_DIR)
+    dest = AWS_ARGS[1].replace('s3:/', BASE_DIR)
+
+    src, dest = normalize_args(src, dest)
+
+    try:
+        '/'.join(os.makedirs(dest.split('/')[:-1]))
+    except:
+        pass
+
+    if os.path.isdir(src):
+        if not recursive:
+            raise Exception("Key {} does not exist".format(src))
+        shutil.copytree(src, scratchify_path(src, True))
+        os.rename(scratchify_path(src), dest)
+    else:
+        shutil.copy(src, scratchify_path(src, True))
+        os.rename(scratchify_path(src), dest)
+
+elif AWS_OPERATION == 'rm':
+    recursive = False
+    if AWS_ARGS[0] == '--recursive':
+        recursive = True
+        AWS_ARGS = AWS_ARGS[1:]
+
+    src = AWS_ARGS[0].replace('s3:/', BASE_DIR)
+
+    if os.path.isdir(src):
+        if not recursive:
+            raise Exception("Key {} does not exist".format(src))
+        shutil.rmtree(src)
+    else:
+        os.remove(src)
+
+else:
+    raise ValueError(
+        'Unsupported operation name: {}.'.format(AWS_OPERATION)
+    )
