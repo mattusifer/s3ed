@@ -164,13 +164,20 @@ This will only run if FILE-OR-DIRECTORY is in the tramps3-tmp-s3-dir."
 (defun tramps3-refresh-tmp-dir (&optional input-dir)
   "Refresh all active tramps3 buffers, including INPUT-DIR if provided."
   (let* ((all-active-files-dirs (--map (with-current-buffer it (if (tramps3-is-dired-active)
-                                                                   default-directory buffer-file-name))
+                                                                   default-directory
+                                                                 buffer-file-name))
                                        (buffer-list)))
-         (all-tramps3-files-dirs (--separate (tramps3-is-directory (tramps3-local-path-to-s3-path it))
-                                             (--filter (tramps3-string-starts-with it tramps3-tmp-s3-dir)
-                                                       (add-to-list 'all-active-files-dirs input-dir)))))
-    (tramps3-clear-tmp-dir)
+         (all-tramps3-files-dirs (--separate (tramps3-is-directory
+                                              (tramps3-local-path-to-s3-path it))
+                                             (--filter (tramps3-string-starts-with
+                                                        it tramps3-tmp-s3-dir)
+                                                       (add-to-list 'all-active-files-dirs
+                                                                    input-dir)))))
+    (tramps3-rm tramps3-tmp-s3-dir)
+    (make-directory (if (tramps3-is-dired-active) default-directory
+                      (tramps3-parent-directory buffer-file-name)) t)
     (dolist (current-directory (car all-tramps3-files-dirs))
+      (make-directory current-directory t)
       (let* ((s3-directory (tramps3-local-path-to-s3-path current-directory))
              (file-list (-filter (lambda (f) f) (tramps3-s3-ls s3-directory)))
              (full-s3-paths (-map (lambda (file) (concat s3-directory file))
@@ -185,10 +192,10 @@ This will only run if FILE-OR-DIRECTORY is in the tramps3-tmp-s3-dir."
         ;; rebuild from files s3
         (when s3-dirs (tramps3-mkdirs s3-dirs))
         (when s3-files (tramps3-create-empty-files s3-files))))
+
     (dolist (current-file (car (-take-last 1 all-tramps3-files-dirs)))
       (let ((s3-file (tramps3-local-path-to-s3-path current-file)))
-        (tramps3-s3-cp s3-file current-file)
-        (revert-buffer t t)))))
+        (tramps3-s3-cp s3-file current-file)))))
 
 (provide 'tramps3-io)
 
