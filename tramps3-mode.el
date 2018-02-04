@@ -59,12 +59,8 @@ The original function and arguments are available as ORIG-DIRED-DO-DELETE and AR
                                              (dired-get-filename))))
         (if (and (tramps3-is-directory current-local-file)
                  (y-or-n-p (format "Recursively delete %s? " current-s3-file)))
-            (progn
-              (delete-directory current-local-file t)
-              (tramps3-s3-rm current-s3-file t t))
-          (progn
-            (delete-file current-local-file)
-            (tramps3-s3-rm current-s3-file nil t)))))
+          (tramps3-s3-rm current-s3-file t t)
+          (tramps3-s3-rm current-s3-file nil t))))
     (apply orig-dired-do-delete args)))
 (advice-add 'dired-do-delete :around #'tramps3-dired-do-s3-delete)
 
@@ -76,19 +72,18 @@ The original function and arguments are available as ORIG-DIRED-DO-FLAGGED-DELET
         (when (y-or-n-p (format "Delete %s marked files? " (length current-local-files)))
           (dolist (current-local-file current-local-files)
             (let ((current-s3-file (tramps3-local-path-to-s3-path current-local-file)))
-              (if (and (tramps3-is-directory current-local-file)
-                       (y-or-n-p (format "Recursively delete %s? " current-s3-file)))
-                  (delete-directory current-local-file t)
-                (delete-file current-local-file))
-              (tramps3-s3-rm current-s3-file (tramps3-is-directory current-local-file) t)))))
+              (when (or (not (tramps3-is-directory current-local-file))
+                      (and (tramps3-is-directory current-local-file)
+                           (y-or-n-p (format "Recursively delete %s? " current-s3-file))))
+                (tramps3-s3-rm current-s3-file (tramps3-is-directory current-local-file) t))))))
     (apply orig-dired-do-flagged-delete args)))
 (advice-add 'dired-do-flagged-delete :around #'tramps3-dired-do-s3-flagged-delete)
 
 (defun tramps3-dired-do-s3-refresh (orig-dired-do-refresh &rest args)
   "A wrapper around dired's dired-do-refresh function.
 The original function and arguments are available as ORIG-DIRED-DO-REFRESH and ARGS."
-  (if (and (tramps3-is-active) (tramps3-is-dired-active))
-      (tramps3-refresh-directory))
+  (when (and (tramps3-is-active) (tramps3-is-dired-active))
+    (tramps3-refresh-tmp-dir))
   (apply orig-dired-do-refresh args))
 (advice-add 'revert-buffer :around #'tramps3-dired-do-s3-refresh)
 
@@ -101,11 +96,10 @@ The original function and arguments are available as ORIG-DIRED-DO-RENAME and AR
              (current-s3-parent-dir (tramps3-parent-directory current-s3-file)))
         (-when-let* ((dest-s3-file (tramps3-completing-read current-s3-parent-dir
                                                             (format "Rename %s to"
-                                                                    current-s3-file)))
-                     (dest-local-file (tramps3-s3-path-to-local-path dest-s3-file)))
-          (rename-file current-local-file dest-local-file t)
+                                                                    current-s3-file))))
           (tramps3-s3-mv current-s3-file dest-s3-file
-                         (tramps3-is-directory current-local-file) t)))
+                         (tramps3-is-directory current-local-file) t)
+          (tramps3-refresh-tmp-dir)))
     (apply orig-dired-do-rename args)))
 (advice-add 'dired-do-rename :around #'tramps3-dired-do-s3-rename)
 
@@ -117,13 +111,10 @@ The original function and arguments are available as ORIG-DIRED-DO-COPY and ARGS
              (current-s3-file (tramps3-local-path-to-s3-path current-local-file))
              (dest-file (tramps3-completing-read "" (format "Copy %s to" current-s3-file))))
         (if (tramps3-string-starts-with dest-file tramps3-s3-uri-scheme)
-            (let ((dest-local-file (tramps3-s3-path-to-local-path dest-file)))
-              (make-directory (tramps3-parent-directory dest-local-file) t)
-              (if (tramps3-is-directory current-s3-file)
-                  (copy-directory current-local-file dest-local-file)
-                (copy-file current-local-file dest-local-file))
+            (progn
               (tramps3-s3-cp current-s3-file dest-file
-                             (tramps3-is-directory current-local-file) t))
+                             (tramps3-is-directory current-local-file) t)
+              (tramps3-refresh-tmp-dir))
           (progn
             (tramps3-s3-cp current-s3-file current-local-file
                            (tramps3-is-directory current-local-file))
@@ -144,8 +135,8 @@ The original function and arguments are available as ORIG-DIRED-FIND-FILE and AR
       (let* ((current-local-file (dired-get-filename)))
         (if (tramps3-is-directory current-local-file)
             (progn
-              (apply orig-dired-find-file args)
-              (revert-buffer t t))
+              (tramps3-refresh-tmp-dir current-local-file)
+              (apply orig-dired-find-file args))
           (progn
             (tramps3-s3-cp (tramps3-local-path-to-s3-path current-local-file) current-local-file)
             (apply orig-dired-find-file args))))
