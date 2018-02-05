@@ -2,6 +2,14 @@
 
 S3ed provides an interface to [Amazon S3](https://aws.amazon.com/s3/) from within Emacs.
 
+## Installation
+
+S3ed is available on [MELPA](https://melpa.org/)
+
+```
+M-x package-install s3ed
+```
+
 ## Usage
 
 Initialize s3ed
