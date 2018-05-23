@@ -173,11 +173,24 @@ The original function and arguments are available as ORIG-DIRED-DO-ASYNC-SHELL-C
     (apply orig-dired-do-async-shell-command args)))
 (advice-add 'dired-do-async-shell-command :around #'s3ed-dired-do-async-shell-command)
 
-(define-minor-mode s3ed-mode
-  "Minor mode for s3ed"
-  :lighter " s3ed"
-  :keymap s3ed-mode-map
-  :global t)
+(define-derived-mode
+  s3ed-major-mode special-mode "s3ed"
+  "Major mode for s3ed"
+  :lighter "S3ed"
+  :keymap s3ed-mode-map)
+
+(setq s3ed-buffer-name "*s3ed*")
+
+(defun s3ed-visualize-s3ed (input-path)
+  "Visualize s3ed at INPUT-PATH."
+  (switch-to-buffer-other-window
+     (get-buffer-create s3ed-buffer-name))
+  (let ((inhibit-read-only t))
+    (s3ed-major-mode)
+    (erase-buffer)
+    (dolist (dir (s3ed-s3-ls input-path))
+      (insert dir)
+      (insert "\n"))))
 
 (provide 's3ed-mode)
 

@@ -42,8 +42,21 @@
           (if async " in the background" "")))
 
 (defun s3ed-s3-ls (path)
-  "List an s3 PATH."
+  "List an s3 path.
+Returns a list of files and directories in PATH."
   (cl-flet ((parse-s3-ls-raw-output (raw-line) (car (-take-last 1 (split-string it)))))
+    (--remove (or (string= "" it) (not it))
+              (--map (if (s3ed-is-root-s3-path path)
+                         (concat (parse-s3-ls-raw-output it) "/")
+                       (parse-s3-ls-raw-output it))
+                     (split-string (s3ed-shell-command-no-message
+                                    (format "aws s3 ls %s" path) t
+                                    (format "%s: Listing files on s3..." s3ed-app-name)) "\n")))))
+
+(defun s3ed-s3-ls-full (path)
+  "List an s3 path.
+Returns a list of files and directories in PATH, along with file properties."
+  (cl-flet ((parse-s3-ls-raw-output (raw-line) (car (split-string it))))
     (--remove (or (string= "" it) (not it))
               (--map (if (s3ed-is-root-s3-path path)
                          (concat (parse-s3-ls-raw-output it) "/")
