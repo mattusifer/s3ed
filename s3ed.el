@@ -71,6 +71,16 @@ Will be a refreshed dired buffer if it is a directory."
       (s3ed-mode)
       (s3ed-save-file))))
 
+(defun s3ed-set-profile ()
+  "Set the configured profile that will be used to access AWS"
+  (interactive)
+  (if s3ed-mode
+      (let* ((target-profile (read-string "S3ed Profile: " s3ed-profile-name)))
+        (setq s3ed-profile-name target-profile))
+    (when (y-or-n-p "S3ed mode is disabled, do you want to enable s3ed? ")
+      (s3ed-mode)
+      (s3ed-set-profile))))
+
 (provide 's3ed)
 
 ;;; s3ed.el ends here

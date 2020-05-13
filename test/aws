@@ -5,8 +5,9 @@ import shutil
 import sys
 
 AWS_APP = sys.argv[1]
-AWS_OPERATION = sys.argv[2]
-AWS_ARGS = sys.argv[3:]
+AWS_PROFILE = sys.argv[2]
+AWS_OPERATION = sys.argv[3]
+AWS_ARGS = sys.argv[4:]
 
 BASE_DIR = '/tmp/s3ed-aws-testing'
 

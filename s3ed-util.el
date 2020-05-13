@@ -47,10 +47,17 @@
 If 'RET' is not nil, results from CMD will be returned.
 Default messages will be replaced with custom message 'MSG' if it is provided."
   (when msg (message msg))
-  (let ((inhibit-message t))
-    (if ret
-        (shell-command-to-string cmd)
-      (shell-command cmd))))
+  (let* ((inhibit-message t)
+         (program-name (car (s-split " " cmd)))
+         (program-args (cdr (s-split " " cmd)))
+         (program-result (with-temp-buffer
+                           (list (apply #'call-process program-name nil
+                                        (current-buffer) nil program-args)
+                                 (buffer-string))))
+         (program-exit-code (car program-result))
+         (program-output (car (cdr program-result))))
+    (if (> program-exit-code 0) (error program-output)
+      (when ret program-output))))
 
 (defun s3ed-completing-read-backspace (cur-base)
   "If CUR-BASE is at the root, backspace acts normally.

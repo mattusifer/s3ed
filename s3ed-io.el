@@ -26,19 +26,21 @@
 
 (require 's3ed-util)
 
+(defcustom s3ed-profile-name "default"
+  "The profile with which to execute the aws CLI")
+
 (defconst s3ed-app-name "s3ed")
 (defconst s3ed-tmp-s3-dir (concat "/tmp/" s3ed-app-name))
 
 (defconst s3ed-streamable-commands
   '("head" "cat" "grep" "tail" "sed" "awk" "cut" "wc" "sort" "tr" "uniq" "lbzcat" "gzcat"))
 
-(defconst s3ed-profile-name "default")
-
 ;; s3 functions
 
-(defun s3ed-get-profile-string ()
-  "Get the string used to authorize the s3 command."
-  (concat "--profile=" s3ed-profile-name))
+(defun s3ed-aws-cli (cmd)
+  "Run the aws cli (s3) command with the configured profile.
+The given CMD string will be appended."
+  (format "aws s3 --profile=%s %s" s3ed-profile-name cmd))
 
 (defun s3ed-get-transfer-message (src dest async)
   "Get message to display when transferring data from SRC to DEST.  If specified, this will be an ASYNC operation."
@@ -55,13 +57,13 @@
                          (concat (parse-s3-ls-raw-output it) "/")
                        (parse-s3-ls-raw-output it))
                      (split-string (s3ed-shell-command-no-message
-                                    (format "aws s3 ls %s %s" (s3ed-get-profile-string) path) t
+                                    (s3ed-aws-cli (format "ls %s" path)) t
                                     (format "%s: Listing files on s3..." s3ed-app-name)) "\n")))))
 
 (defun s3ed-s3-cp (src dest &optional recursive async)
   "Copy s3 SRC file to DEST.  If specified, this will be a RECURSIVE and/or ASYNC operation."
-  (let ((command (format "aws s3 cp %s %s --sse AES256 %s %s"
-                         (s3ed-get-profile-string) (if recursive "--recursive" "") src dest))
+  (let ((command (s3ed-aws-cli (format "cp %s --sse AES256 %s %s"
+                                  (if recursive "--recursive" "") src dest)))
         (msg (s3ed-get-transfer-message src dest async)))
     (if async
         (progn
@@ -71,7 +73,7 @@
 
 (defun s3ed-s3-cp-streams (srcs command &optional async)
   "Stream s3 SRCS into COMMAND.  If specified, this will be an ASYNC operation."
-  (let ((command (format "(%s) | %s" (mapconcat 'identity (--map (format "aws s3 cp %s %s -;" (s3ed-get-profile-string) it)
+  (let ((command (format "(%s) | %s" (mapconcat 'identity (--map (s3ed-aws-cli (format "cp %s -;" it))
                                                                  srcs) " ") command)))
     (if async
         (async-shell-command command)
@@ -79,8 +81,8 @@
 
 (defun s3ed-s3-mv (src dest &optional recursive async)
   "Move s3 SRC file to DEST.  If specified, this will be a RECURSIVE and/or ASYNC operation."
-  (let ((command (format "aws s3 mv %s %s --sse AES256 %s %s"
-                         (s3ed-get-profile-string) (if recursive "--recursive" "") src dest))
+  (let ((command (s3ed-aws-cli (format "mv %s --sse AES256 %s %s"
+                                        (if recursive "--recursive" "") src dest)))
         (msg (s3ed-get-transfer-message src dest async)))
     (if async
         (progn
@@ -92,7 +94,7 @@
   "Remove file or directory PATH from s3. If specified, this will be a RECURSIVE and/or ASYNC operation."
   (let ((msg (format "%s: Removing data from s3%s..." s3ed-app-name
                      (if async " in the background" "")))
-        (command (format "aws s3 rm %s %s %s" (s3ed-get-profile-string) (if recursive "--recursive" "") path)))
+        (command (s3ed-aws-cli (format "rm %s %s" (if recursive "--recursive" "") path))))
     (if async
         (progn
           (apply 'start-process "s3ed-rm" "*s3ed*" (split-string command))
