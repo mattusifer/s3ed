@@ -1,9 +1,9 @@
 ;;; s3ed.el --- Tramp-like access to s3
 
 ;; Author: Matt Usifer <mattusifer@gmail.com>
-;; Version: 0.1.0
+;; Version: 0.2.0
 ;; Keywords: s3 tools
-;; Package-Requires: ((emacs "24.4") (seq) (dash))
+;; Package-Requires: ((emacs "25.1") (dash "2.17.0"))
 ;; Homepage: https://github.com/mattusifer/s3ed
 
 ;; S3ed is free software; you can redistribute it and/or modify
