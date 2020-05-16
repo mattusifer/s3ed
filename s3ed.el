@@ -3,7 +3,7 @@
 ;; Author: Matt Usifer <mattusifer@gmail.com>
 ;; Version: 0.2.0
 ;; Keywords: s3 tools
-;; Package-Requires: ((emacs "25.1") (dash "2.17.0"))
+;; Package-Requires: ((emacs "25.1") (dash "2.17.0") (s "1.12.0"))
 ;; Homepage: https://github.com/mattusifer/s3ed
 
 ;; S3ed is free software; you can redistribute it and/or modify

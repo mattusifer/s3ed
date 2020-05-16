@@ -29,8 +29,12 @@
 (defcustom s3ed-profile-name "default"
   "The profile with which to execute the aws CLI")
 
+(defcustom s3ed-tmp-s3-dir "/tmp"
+  "The directory where we should store s3ed data")
+
 (defconst s3ed-app-name "s3ed")
-(defconst s3ed-tmp-s3-dir (concat "/tmp/" s3ed-app-name))
+
+(defun get-s3ed-tmp-s3-dir () (format "%s/%s/%s" s3ed-tmp-s3-dir s3ed-app-name s3ed-profile-name))
 
 (defconst s3ed-streamable-commands
   '("head" "cat" "grep" "tail" "sed" "awk" "cut" "wc" "sort" "tr" "uniq" "lbzcat" "gzcat"))
@@ -111,9 +115,11 @@ The given CMD string will be appended."
 
 (defun s3ed-create-empty-file (filename)
   "Create FILENAME if it doesn't exist."
-  (s3ed-shell-command-no-message (format "mkdir -p %s && touch %s" (s3ed-parent-directory filename)
-                                            filename)
-                                    :msg "s3ed: Creating dummy file..."))
+  (s3ed-shell-command-no-message (format "mkdir -p %s"
+                                         (s3ed-parent-directory filename))
+                                 :msg "s3ed: Creating parent directory...")
+  (s3ed-shell-command-no-message (format "touch %s" filename)
+                                 :msg "s3ed: Creating dummy file..."))
 
 (defun s3ed-create-empty-files (filenames)
   "Create all files in FILENAMES if they don't exist."
@@ -126,35 +132,36 @@ The given CMD string will be appended."
 (defun s3ed-rm (file-or-directory)
   "Recursively remove FILE-OR-DIRECTORY.
 This will only run if FILE-OR-DIRECTORY is in the s3ed-tmp-s3-dir."
-  (when (s3ed-string-starts-with file-or-directory s3ed-tmp-s3-dir)
+  (when (s-prefix? (get-s3ed-tmp-s3-dir) file-or-directory)
     (shell-command (format "rm -rf %s" file-or-directory))))
 
 ;; validation
 
 (defun s3ed-is-s3-path (path)
   "Confirm that this PATH is a valid s3 path."
-  (s3ed-string-starts-with path "s3"))
+  (s-prefix? "s3" path))
 
 (defun s3ed-is-directory (path)
   "Confirm that this PATH is a directory."
   (if (s3ed-is-s3-path path)
-      (s3ed-string-ends-with path "/")
-    (equal 0 (s3ed-shell-command-no-message (format "test -d %s" path)))))
+      (s-suffix? "/" path)
+    (ignore-errors (s3ed-shell-command-no-message (format "test -d %s" path))
+                   t)))
 
 ;; s3 to local translation, path functions
 
 (defun s3ed-local-path-to-s3-path (path)
   "Convert local PATH to an s3 path."
-  (let ((s3-path (replace-regexp-in-string s3ed-tmp-s3-dir "s3:/" path)))
+  (let ((s3-path (replace-regexp-in-string (get-s3ed-tmp-s3-dir) "s3:/" path)))
     (when (s3ed-is-s3-path s3-path)
-      (if (and (s3ed-is-directory path) (not (s3ed-string-ends-with s3-path "/")))
+      (if (and (s3ed-is-directory path) (not (s-suffix? "/" s3-path)))
           (concat s3-path "/")
         s3-path))))
 
 (defun s3ed-s3-path-to-local-path (path)
   "Convert s3 PATH to a local path."
   (when (s3ed-is-s3-path path)
-    (let ((local-path (replace-regexp-in-string "s3:/" s3ed-tmp-s3-dir path)))
+    (let ((local-path (replace-regexp-in-string "s3:/" (get-s3ed-tmp-s3-dir) path)))
       local-path)))
 
 (defun s3ed-buffer-s3-path ()
@@ -163,7 +170,7 @@ This will only run if FILE-OR-DIRECTORY is in the s3ed-tmp-s3-dir."
 
 (defun s3ed-parent-directory (path)
   "Get parent directory path of PATH."
-  (if (s3ed-string-ends-with path "/")
+  (if (s-suffix? "/" path)
       (concat (mapconcat 'identity (-drop-last 2 (split-string path "/")) "/") "/")
     (concat (mapconcat 'identity (-drop-last 1 (split-string path "/")) "/") "/")))
 
@@ -177,15 +184,15 @@ This will only run if FILE-OR-DIRECTORY is in the s3ed-tmp-s3-dir."
                                        (buffer-list)))
          (all-s3ed-files-dirs (--separate (s3ed-is-directory
                                               (s3ed-local-path-to-s3-path it))
-                                             (--filter (s3ed-string-starts-with
-                                                        it s3ed-tmp-s3-dir)
+                                             (--filter (s-prefix?
+                                                        (get-s3ed-tmp-s3-dir) it)
                                                        (add-to-list 'all-active-files-dirs
                                                                     input-dir))))
          (active-directory (condition-case nil (if (s3ed-is-dired-active) default-directory
                                                           (s3ed-parent-directory buffer-file-name))
                                       (error nil))))
     (when active-directory (make-directory active-directory t))
-    (s3ed-rm s3ed-tmp-s3-dir)
+    (s3ed-rm (get-s3ed-tmp-s3-dir))
 
     (dolist (current-directory (car all-s3ed-files-dirs))
       (make-directory current-directory t)
