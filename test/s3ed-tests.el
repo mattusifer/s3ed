@@ -115,7 +115,6 @@
 (ert-deftest s3ed-is-directory-test ()
   (s3ed-setup-teardown-test-dir
    (let ((directory-name (format "%stest-directory" s3ed-test-directory)))
-     (message directory-name)
      (make-directory directory-name t)
      (should (s3ed-is-directory directory-name)))))
 
