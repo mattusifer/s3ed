@@ -12,8 +12,7 @@
     `(let ((,dir (file-name-as-directory (make-temp-file "s3ed-" t))))
        (let ((s3ed-test-directory ,dir))
          ,@body)
-;       (delete-directory ,dir t)
-       )))
+       (delete-directory ,dir t))))
 
 (defmacro s3ed-setup-teardown-aws-test-dir (&rest body)
   (let ((aws-test-dir (make-symbol "aws-test-dir")))
