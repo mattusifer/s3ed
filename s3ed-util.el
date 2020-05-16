@@ -34,9 +34,10 @@
   (equal major-mode 'dired-mode))
 
 (defun s3ed-shell-command-no-message (cmd &optional ret msg)
-  "Run CMD, inhibiting messages from the Emacs builtin ‘shell-command’.
+  "Run CMD, inhibiting messages from underlying process.
 If 'RET' is not nil, results from CMD will be returned.
-Default messages will be replaced with custom message 'MSG' if it is provided."
+Default messages will be replaced with custom message 'MSG' if it is provided.
+If the error code is greater than 0, an error will be raised."
   (when msg (message msg))
   (let* ((inhibit-message t)
          (program-name (car (s-split " " cmd)))
@@ -47,7 +48,7 @@ Default messages will be replaced with custom message 'MSG' if it is provided."
                                  (buffer-string))))
          (program-exit-code (car program-result))
          (program-output (car (cdr program-result))))
-    (if (> program-exit-code 0) (error program-output)
+    (if (> program-exit-code 0) (error (format "Error running command '%s': %s" cmd program-output))
       (when ret program-output))))
 
 (defun s3ed-completing-read-backspace (cur-base)
