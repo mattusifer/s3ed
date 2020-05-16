@@ -44,7 +44,7 @@
 (defun s3ed-aws-cli (cmd)
   "Run the aws cli (s3) command with the configured profile.
 The given CMD string will be appended."
-  (format "aws s3 --profile=%s %s" s3ed-profile-name cmd))
+  (format "aws --profile=%s s3 %s" s3ed-profile-name cmd))
 
 (defun s3ed-get-transfer-message (src dest async)
   "Get message to display when transferring data from SRC to DEST.  If specified, this will be an ASYNC operation."
@@ -66,8 +66,8 @@ The given CMD string will be appended."
 
 (defun s3ed-s3-cp (src dest &optional recursive async)
   "Copy s3 SRC file to DEST.  If specified, this will be a RECURSIVE and/or ASYNC operation."
-  (let ((command (s3ed-aws-cli (format "cp %s --sse AES256 %s %s"
-                                  (if recursive "--recursive" "") src dest)))
+  (let ((command (s3ed-aws-cli (format "cp %s--sse AES256 %s %s"
+                                  (if recursive "--recursive " "") src dest)))
         (msg (s3ed-get-transfer-message src dest async)))
     (if async
         (progn
