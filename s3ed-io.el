@@ -85,8 +85,8 @@ The given CMD string will be appended."
 
 (defun s3ed-s3-mv (src dest &optional recursive async)
   "Move s3 SRC file to DEST.  If specified, this will be a RECURSIVE and/or ASYNC operation."
-  (let ((command (s3ed-aws-cli (format "mv %s --sse AES256 %s %s"
-                                        (if recursive "--recursive" "") src dest)))
+  (let ((command (s3ed-aws-cli (format "mv %s--sse AES256 %s %s"
+                                        (if recursive "--recursive " "") src dest)))
         (msg (s3ed-get-transfer-message src dest async)))
     (if async
         (progn
@@ -98,7 +98,7 @@ The given CMD string will be appended."
   "Remove file or directory PATH from s3. If specified, this will be a RECURSIVE and/or ASYNC operation."
   (let ((msg (format "%s: Removing data from s3%s..." s3ed-app-name
                      (if async " in the background" "")))
-        (command (s3ed-aws-cli (format "rm %s %s" (if recursive "--recursive" "") path))))
+        (command (s3ed-aws-cli (format "rm %s%s" (if recursive "--recursive " "") path))))
     (if async
         (progn
           (apply 'start-process "s3ed-rm" "*s3ed*" (split-string command))
