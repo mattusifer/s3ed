@@ -5,6 +5,7 @@
 (require 'dash)
 (require 's)
 
+(require 's3ed-mode)
 (require 's3ed-util)
 
 (defmacro s3ed-setup-teardown-test-dir (&rest body)

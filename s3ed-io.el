@@ -23,14 +23,24 @@
 ;;; Code:
 
 (require 'dash)
+(require 's)
 
 (require 's3ed-util)
 
+(defgroup s3ed nil
+  "Interact with S3 from Emacs."
+  :link '(url-link "https://github.com/mattusifer/s3ed")
+  :group 'tools)
+
 (defcustom s3ed-profile-name "default"
-  "The profile with which to execute the aws CLI")
+  "The profile with which to execute the aws CLI"
+  :type '(string)
+  :group 's3ed)
 
 (defcustom s3ed-tmp-s3-dir "/tmp"
-  "The directory where we should store s3ed data")
+  "The directory where we should store s3ed data"
+  :type '(string)
+  :group 's3ed)
 
 (defconst s3ed-app-name "s3ed")
 

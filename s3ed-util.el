@@ -23,6 +23,8 @@
 
 ;;; Code:
 
+(require 's)
+
 (defconst s3ed-s3-uri-scheme "s3://")
 
 (defun s3ed-is-root-s3-path (path)
