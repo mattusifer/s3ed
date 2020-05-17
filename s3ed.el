@@ -1,9 +1,9 @@
 ;;; s3ed.el --- Tramp-like access to s3
 
 ;; Author: Matt Usifer <mattusifer@gmail.com>
-;; Version: 0.1.0
+;; Version: 0.2.0
 ;; Keywords: s3 tools
-;; Package-Requires: ((emacs "24.4") (seq) (dash))
+;; Package-Requires: ((emacs "25.1") (dash "2.17.0") (s "1.12.0"))
 ;; Homepage: https://github.com/mattusifer/s3ed
 
 ;; S3ed is free software; you can redistribute it and/or modify
@@ -70,6 +70,16 @@ Will be a refreshed dired buffer if it is a directory."
     (when (y-or-n-p "S3ed mode is disabled, do you want to enable s3ed? ")
       (s3ed-mode)
       (s3ed-save-file))))
+
+(defun s3ed-set-profile ()
+  "Set the configured profile that will be used to access AWS"
+  (interactive)
+  (if s3ed-mode
+      (let* ((target-profile (read-string "S3ed Profile: " s3ed-profile-name)))
+        (setq s3ed-profile-name target-profile))
+    (when (y-or-n-p "S3ed mode is disabled, do you want to enable s3ed? ")
+      (s3ed-mode)
+      (s3ed-set-profile))))
 
 (provide 's3ed)
 

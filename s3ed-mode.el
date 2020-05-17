@@ -34,7 +34,7 @@
 
 (defun s3ed-is-active ()
   "Check whether s3ed is active."
-  (and s3ed-mode (s3ed-string-starts-with default-directory s3ed-tmp-s3-dir)))
+  (and s3ed-mode (s-prefix? (get-s3ed-tmp-s3-dir) default-directory)))
 
 (defun s3ed-after-save-hook ()
   "Push change to s3 after save."
@@ -110,7 +110,7 @@ The original function and arguments are available as ORIG-DIRED-DO-COPY and ARGS
       (let* ((current-local-file (dired-get-filename))
              (current-s3-file (s3ed-local-path-to-s3-path current-local-file))
              (dest-file (s3ed-completing-read "" (format "Copy %s to" current-s3-file))))
-        (if (s3ed-string-starts-with dest-file s3ed-s3-uri-scheme)
+        (if (s-prefix? s3ed-s3-uri-scheme dest-file)
             (progn
               (s3ed-s3-cp current-s3-file dest-file
                              (s3ed-is-directory current-local-file) t)

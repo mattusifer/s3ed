@@ -3,6 +3,7 @@
 ;;; Code:
 
 (require 'dash)
+(require 's)
 
 (require 's3ed-util)
 
@@ -19,14 +20,6 @@
        (when (file-exists-p ,aws-test-dir) (delete-directory ,aws-test-dir t))
        ,@body
        (when (file-exists-p ,aws-test-dir) (delete-directory ,aws-test-dir t)))))
-
-(ert-deftest s3ed-string-starts-with ()
-  (should (s3ed-string-starts-with "string" "s"))
-  (should (not (s3ed-string-starts-with "xstring" "s"))))
-
-(ert-deftest s3ed-string-ends-with ()
-  (should (s3ed-string-ends-with "string" "g"))
-  (should (not (s3ed-string-ends-with "string" "s"))))
 
 (ert-deftest s3ed-is-dired-active ()
   (should (not (s3ed-is-dired-active)))
@@ -68,8 +61,8 @@
   (s3ed-setup-teardown-test-dir
    (let* ((inhibit-message t)
           (s3ed-tmp-s3-dir (substring s3ed-test-directory 0 -1))
-          (s3ed-subdir (format "%s/s3ed/" s3ed-tmp-s3-dir))
-          (s3ed-subdir2 (format "%s/another-bucket/" s3ed-tmp-s3-dir)))
+          (s3ed-subdir (format "%s/s3ed/" (get-s3ed-tmp-s3-dir)))
+          (s3ed-subdir2 (format "%s/another-bucket/" (get-s3ed-tmp-s3-dir))))
      (make-directory s3ed-subdir t)
      (make-directory s3ed-subdir2 t)
      (dired s3ed-subdir) ;; background s3ed buffer
@@ -120,18 +113,18 @@
 
 (ert-deftest s3ed-is-directory-test ()
   (s3ed-setup-teardown-test-dir
-   (let ((directory-name (format "%s/test-directory" s3ed-test-directory)))
+   (let ((directory-name (format "%stest-directory" s3ed-test-directory)))
      (make-directory directory-name t)
      (should (s3ed-is-directory directory-name)))))
 
 (ert-deftest s3ed-local-path-to-s3-path-test ()
-  (should (equal (s3ed-local-path-to-s3-path (format "%s/local/path" s3ed-tmp-s3-dir))
+  (should (equal (s3ed-local-path-to-s3-path (format "%s/local/path" (get-s3ed-tmp-s3-dir)))
                  "s3://local/path"))
   (should (not (s3ed-local-path-to-s3-path "typo/local/path"))))
 
 (ert-deftest s3ed-s3-path-to-local-path-test ()
   (should (equal (s3ed-s3-path-to-local-path "s3://s3/path")
-                 (format "%s/s3/path" s3ed-tmp-s3-dir)))
+                 (format "%s/s3/path" (get-s3ed-tmp-s3-dir))))
   (should (not (s3ed-s3-path-to-local-path "s4://typo/local/path"))))
 
 (ert-deftest s3ed-parent-directory-test ()

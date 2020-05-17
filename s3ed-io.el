@@ -26,13 +26,25 @@
 
 (require 's3ed-util)
 
+(defcustom s3ed-profile-name "default"
+  "The profile with which to execute the aws CLI")
+
+(defcustom s3ed-tmp-s3-dir "/tmp"
+  "The directory where we should store s3ed data")
+
 (defconst s3ed-app-name "s3ed")
-(defconst s3ed-tmp-s3-dir (concat "/tmp/" s3ed-app-name))
+
+(defun get-s3ed-tmp-s3-dir () (format "%s/%s/%s" s3ed-tmp-s3-dir s3ed-app-name s3ed-profile-name))
 
 (defconst s3ed-streamable-commands
   '("head" "cat" "grep" "tail" "sed" "awk" "cut" "wc" "sort" "tr" "uniq" "lbzcat" "gzcat"))
 
 ;; s3 functions
+
+(defun s3ed-aws-cli (cmd)
+  "Run the aws cli (s3) command with the configured profile.
+The given CMD string will be appended."
+  (format "aws --profile=%s s3 %s" s3ed-profile-name cmd))
 
 (defun s3ed-get-transfer-message (src dest async)
   "Get message to display when transferring data from SRC to DEST.  If specified, this will be an ASYNC operation."
@@ -49,13 +61,13 @@
                          (concat (parse-s3-ls-raw-output it) "/")
                        (parse-s3-ls-raw-output it))
                      (split-string (s3ed-shell-command-no-message
-                                    (format "aws s3 ls %s" path) t
+                                    (s3ed-aws-cli (format "ls %s" path)) t
                                     (format "%s: Listing files on s3..." s3ed-app-name)) "\n")))))
 
 (defun s3ed-s3-cp (src dest &optional recursive async)
   "Copy s3 SRC file to DEST.  If specified, this will be a RECURSIVE and/or ASYNC operation."
-  (let ((command (format "aws s3 cp %s --sse AES256 %s %s"
-                         (if recursive "--recursive" "") src dest))
+  (let ((command (s3ed-aws-cli (format "cp %s--sse AES256 %s %s"
+                                  (if recursive "--recursive " "") src dest)))
         (msg (s3ed-get-transfer-message src dest async)))
     (if async
         (progn
@@ -65,7 +77,7 @@
 
 (defun s3ed-s3-cp-streams (srcs command &optional async)
   "Stream s3 SRCS into COMMAND.  If specified, this will be an ASYNC operation."
-  (let ((command (format "(%s) | %s" (mapconcat 'identity (--map (format "aws s3 cp %s -;" it)
+  (let ((command (format "(%s) | %s" (mapconcat 'identity (--map (s3ed-aws-cli (format "cp %s -;" it))
                                                                  srcs) " ") command)))
     (if async
         (async-shell-command command)
@@ -73,8 +85,8 @@
 
 (defun s3ed-s3-mv (src dest &optional recursive async)
   "Move s3 SRC file to DEST.  If specified, this will be a RECURSIVE and/or ASYNC operation."
-  (let ((command (format "aws s3 mv %s --sse AES256 %s %s"
-                         (if recursive "--recursive" "") src dest))
+  (let ((command (s3ed-aws-cli (format "mv %s--sse AES256 %s %s"
+                                        (if recursive "--recursive " "") src dest)))
         (msg (s3ed-get-transfer-message src dest async)))
     (if async
         (progn
@@ -86,7 +98,7 @@
   "Remove file or directory PATH from s3. If specified, this will be a RECURSIVE and/or ASYNC operation."
   (let ((msg (format "%s: Removing data from s3%s..." s3ed-app-name
                      (if async " in the background" "")))
-        (command (format "aws s3 rm %s %s" (if recursive "--recursive" "") path)))
+        (command (s3ed-aws-cli (format "rm %s%s" (if recursive "--recursive " "") path))))
     (if async
         (progn
           (apply 'start-process "s3ed-rm" "*s3ed*" (split-string command))
@@ -103,9 +115,11 @@
 
 (defun s3ed-create-empty-file (filename)
   "Create FILENAME if it doesn't exist."
-  (s3ed-shell-command-no-message (format "mkdir -p %s && touch %s" (s3ed-parent-directory filename)
-                                            filename)
-                                    :msg "s3ed: Creating dummy file..."))
+  (s3ed-shell-command-no-message (format "mkdir -p %s"
+                                         (s3ed-parent-directory filename))
+                                 :msg "s3ed: Creating parent directory...")
+  (s3ed-shell-command-no-message (format "touch %s" filename)
+                                 :msg "s3ed: Creating dummy file..."))
 
 (defun s3ed-create-empty-files (filenames)
   "Create all files in FILENAMES if they don't exist."
@@ -118,35 +132,36 @@
 (defun s3ed-rm (file-or-directory)
   "Recursively remove FILE-OR-DIRECTORY.
 This will only run if FILE-OR-DIRECTORY is in the s3ed-tmp-s3-dir."
-  (when (s3ed-string-starts-with file-or-directory s3ed-tmp-s3-dir)
+  (when (s-prefix? (get-s3ed-tmp-s3-dir) file-or-directory)
     (shell-command (format "rm -rf %s" file-or-directory))))
 
 ;; validation
 
 (defun s3ed-is-s3-path (path)
   "Confirm that this PATH is a valid s3 path."
-  (s3ed-string-starts-with path "s3"))
+  (s-prefix? "s3" path))
 
 (defun s3ed-is-directory (path)
   "Confirm that this PATH is a directory."
   (if (s3ed-is-s3-path path)
-      (s3ed-string-ends-with path "/")
-    (equal 0 (s3ed-shell-command-no-message (format "test -d %s" path)))))
+      (s-suffix? "/" path)
+    (ignore-errors (s3ed-shell-command-no-message (format "test -d %s" path))
+                   t)))
 
 ;; s3 to local translation, path functions
 
 (defun s3ed-local-path-to-s3-path (path)
   "Convert local PATH to an s3 path."
-  (let ((s3-path (replace-regexp-in-string s3ed-tmp-s3-dir "s3:/" path)))
+  (let ((s3-path (replace-regexp-in-string (get-s3ed-tmp-s3-dir) "s3:/" path)))
     (when (s3ed-is-s3-path s3-path)
-      (if (and (s3ed-is-directory path) (not (s3ed-string-ends-with s3-path "/")))
+      (if (and (s3ed-is-directory path) (not (s-suffix? "/" s3-path)))
           (concat s3-path "/")
         s3-path))))
 
 (defun s3ed-s3-path-to-local-path (path)
   "Convert s3 PATH to a local path."
   (when (s3ed-is-s3-path path)
-    (let ((local-path (replace-regexp-in-string "s3:/" s3ed-tmp-s3-dir path)))
+    (let ((local-path (replace-regexp-in-string "s3:/" (get-s3ed-tmp-s3-dir) path)))
       local-path)))
 
 (defun s3ed-buffer-s3-path ()
@@ -155,7 +170,7 @@ This will only run if FILE-OR-DIRECTORY is in the s3ed-tmp-s3-dir."
 
 (defun s3ed-parent-directory (path)
   "Get parent directory path of PATH."
-  (if (s3ed-string-ends-with path "/")
+  (if (s-suffix? "/" path)
       (concat (mapconcat 'identity (-drop-last 2 (split-string path "/")) "/") "/")
     (concat (mapconcat 'identity (-drop-last 1 (split-string path "/")) "/") "/")))
 
@@ -169,15 +184,15 @@ This will only run if FILE-OR-DIRECTORY is in the s3ed-tmp-s3-dir."
                                        (buffer-list)))
          (all-s3ed-files-dirs (--separate (s3ed-is-directory
                                               (s3ed-local-path-to-s3-path it))
-                                             (--filter (s3ed-string-starts-with
-                                                        it s3ed-tmp-s3-dir)
+                                             (--filter (s-prefix?
+                                                        (get-s3ed-tmp-s3-dir) it)
                                                        (add-to-list 'all-active-files-dirs
                                                                     input-dir))))
          (active-directory (condition-case nil (if (s3ed-is-dired-active) default-directory
                                                           (s3ed-parent-directory buffer-file-name))
                                       (error nil))))
     (when active-directory (make-directory active-directory t))
-    (s3ed-rm s3ed-tmp-s3-dir)
+    (s3ed-rm (get-s3ed-tmp-s3-dir))
 
     (dolist (current-directory (car all-s3ed-files-dirs))
       (make-directory current-directory t)

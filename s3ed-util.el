@@ -1,6 +1,7 @@
 ;;; s3ed-util.el --- Various utilities
 
 ;; Author: Matt Usifer <mattusifer@gmail.com>
+;; Package-Requires: ((emacs "25.1") (dash "2.17.0") (s "1.12.0"))
 
 ;; S3ed is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -28,29 +29,27 @@
   "Check if PATH is at the root of s3."
   (equal path s3ed-s3-uri-scheme))
 
-(defun s3ed-string-starts-with (s prefix)
-  "Return non-nil if string S begins with PREFIX."
-      (cond ((>= (length s) (length prefix))
-             (string-equal (substring s 0 (length prefix)) prefix))
-            (t nil)))
-
-(defun s3ed-string-ends-with (s suffix)
-  "Return non-nil if string S ends with SUFFIX."
-  (not (equal nil (string-match (format "%s\\'" suffix) s))))
-
 (defun s3ed-is-dired-active ()
   "True if we are in a dired buffer."
   (equal major-mode 'dired-mode))
 
 (defun s3ed-shell-command-no-message (cmd &optional ret msg)
-  "Run CMD, inhibiting messages from the Emacs builtin ‘shell-command’.
+  "Run CMD, inhibiting messages from underlying process.
 If 'RET' is not nil, results from CMD will be returned.
-Default messages will be replaced with custom message 'MSG' if it is provided."
+Default messages will be replaced with custom message 'MSG' if it is provided.
+If the error code is greater than 0, an error will be raised."
   (when msg (message msg))
-  (let ((inhibit-message t))
-    (if ret
-        (shell-command-to-string cmd)
-      (shell-command cmd))))
+  (let* ((inhibit-message t)
+         (program-name (car (s-split " " cmd)))
+         (program-args (cdr (s-split " " cmd)))
+         (program-result (with-temp-buffer
+                           (list (apply #'call-process program-name nil
+                                        (current-buffer) nil program-args)
+                                 (buffer-string))))
+         (program-exit-code (car program-result))
+         (program-output (car (cdr program-result))))
+    (if (> program-exit-code 0) (error (format "Error running command '%s': %s" cmd program-output))
+      (when ret program-output))))
 
 (defun s3ed-completing-read-backspace (cur-base)
   "If CUR-BASE is at the root, backspace acts normally.
@@ -71,7 +70,7 @@ Otherwise, backspace will go up one directory."
 (defun s3ed-completing-read (base msg)
   "Use ‘completing-read’ to find files in s3 starting at BASE.
 MSG will be displayed to the user at prompt."
-  (if (s3ed-string-starts-with base s3ed-s3-uri-scheme)
+  (if (s-prefix? s3ed-s3-uri-scheme base)
       (let* ((choices (seq-remove (lambda (el) (not el)) (s3ed-s3-ls base)))
              (choice (minibuffer-with-setup-hook
                          (lambda ()

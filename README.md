@@ -48,6 +48,13 @@ Shell commands in s3ed dired will be applied by streaming (`aws s3 cp <file> -`)
 
 If you save a file with `s3ed-save-file`, the file is first saved in the s3ed temp dir and then that file is copied up to the requested s3 path.
 
+### Setting the aws profile
+
+The profile that will be used can be set using the interactive
+`s3ed-set-profile` function. You can customize the default profile by
+setting the `s3ed-profile-name` variable.
+
+
 ## Dependencies
 
 - The `aws` command line utility should be on your `PATH`
