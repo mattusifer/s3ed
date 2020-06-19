@@ -74,11 +74,12 @@ Otherwise, backspace will go up one directory."
 MSG will be displayed to the user at prompt."
   (if (s-prefix? s3ed-s3-uri-scheme base)
       (let* ((choices (seq-remove (lambda (el) (not el)) (s3ed-s3-ls base)))
-             (choice (minibuffer-with-setup-hook
-                         (lambda ()
-                           (define-key (current-local-map) (kbd "<backspace>")
-                             (lambda () (interactive) (s3ed-completing-read-backspace base))))
+             (choice (progn
+                       (define-key minibuffer-local-map (kbd "<backspace>")
+                         (lambda () (interactive) (s3ed-completing-read-backspace base)))
                        (catch 'backspace (completing-read (format "%s: %s" msg base) choices)))))
+
+        (define-key minibuffer-local-map (kbd "<backspace>") nil)
 
         ;; no choice means a backspace was entered, recurse upwards
         (if (not choice)
