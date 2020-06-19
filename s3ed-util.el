@@ -79,6 +79,7 @@ MSG will be displayed to the user at prompt."
                          (lambda () (interactive) (s3ed-completing-read-backspace base)))
                        (catch 'backspace (completing-read (format "%s: %s" msg base) choices)))))
 
+        ;; unbind backspace key
         (define-key minibuffer-local-map (kbd "<backspace>") nil)
 
         ;; no choice means a backspace was entered, recurse upwards
