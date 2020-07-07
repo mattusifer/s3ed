@@ -24,6 +24,7 @@
 ;;; Code:
 
 (require 's)
+(require 'seq)
 
 (defconst s3ed-s3-uri-scheme "s3://")
 
