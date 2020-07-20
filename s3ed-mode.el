@@ -25,6 +25,7 @@
 (require 'dash)
 (require 'dired)
 (require 's)
+(require 'seq)
 
 (require 's3ed-util)
 (require 's3ed-io)
