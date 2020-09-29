@@ -4,10 +4,9 @@ import os.path
 import shutil
 import sys
 
-AWS_PROFILE = sys.argv[1]
-AWS_APP = sys.argv[2]
-AWS_OPERATION = sys.argv[3]
-AWS_ARGS = [a for a in sys.argv[4:] if len(a)]
+AWS_APP = sys.argv[1]
+AWS_OPERATION = sys.argv[2]
+AWS_ARGS = [a for a in sys.argv[3:] if len(a)]
 
 BASE_DIR = '/tmp/s3ed-aws-testing'
 
