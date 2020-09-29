@@ -32,7 +32,7 @@
   :link '(url-link "https://github.com/mattusifer/s3ed")
   :group 'tools)
 
-(defcustom s3ed-profile-name "default"
+(defcustom s3ed-profile-name nil
   "The profile with which to execute the aws CLI"
   :type '(string)
   :group 's3ed)
@@ -52,9 +52,10 @@
 ;; s3 functions
 
 (defun s3ed-aws-cli (cmd)
-  "Run the aws cli (s3) command with the configured profile.
+  "Run the aws cli (s3) command with the configured arguments.
 The given CMD string will be appended."
-  (format "aws --profile=%s s3 %s" s3ed-profile-name cmd))
+  (let* ((profile-arg (if s3ed-profile-name (format " --profile %s" s3ed-profile-name) "")))
+    (format "aws%s s3 %s" profile-arg cmd)))
 
 (defun s3ed-get-transfer-message (src dest async)
   "Get message to display when transferring data from SRC to DEST.  If specified, this will be an ASYNC operation."

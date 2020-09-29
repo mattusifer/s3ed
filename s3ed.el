@@ -81,6 +81,16 @@ Will be a refreshed dired buffer if it is a directory."
       (s3ed-mode)
       (s3ed-set-profile))))
 
+
+(defun s3ed-unset-profile ()
+  "Set the configured profile that will be used to access AWS"
+  (interactive)
+  (if s3ed-mode
+    (setq s3ed-profile-name nil)
+    (when (y-or-n-p "S3ed mode is disabled, do you want to enable s3ed? ")
+      (s3ed-mode)
+      (s3ed-set-profile))))
+
 (provide 's3ed)
 
 ;;; s3ed.el ends here
