@@ -83,7 +83,7 @@ Will be a refreshed dired buffer if it is a directory."
 
 
 (defun s3ed-unset-profile ()
-  "Set the configured profile that will be used to access AWS"
+  "Unset the configured profile that will be used to access AWS"
   (interactive)
   (if s3ed-mode
     (setq s3ed-profile-name nil)
