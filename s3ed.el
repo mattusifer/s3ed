@@ -38,7 +38,11 @@ Will be a refreshed dired buffer if it is a directory."
   (if s3ed-mode
       (let* ((current-s3-base-path (if (s3ed-is-active)
                                        (s3ed-local-path-to-s3-path default-directory)
-                                     s3ed-prefix))
+                                     (concat "s3://"
+                                             (completing-read "Specify a bucket: s3://"
+                                                              s3ed-bucket-list nil nil
+                                                              nil nil
+                                                              s3ed-bucket-list))))
              (current-s3-file-path (s3ed-completing-read current-s3-base-path
                                                             "Find S3 file"))
              (current-local-file-path (s3ed-s3-path-to-local-path current-s3-file-path)))

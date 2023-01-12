@@ -42,9 +42,9 @@
   :type '(string)
   :group 's3ed)
 
-(defcustom s3ed-prefix "s3://"
-  "The default s3 bucket prefix"
-  :type '(string)
+(defcustom s3ed-bucket-list '()
+  "Default s3 prefix"
+  :type '(repeat string)
   :group 's3ed)
 
 (defconst s3ed-app-name "s3ed")
