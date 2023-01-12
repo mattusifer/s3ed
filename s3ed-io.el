@@ -42,6 +42,11 @@
   :type '(string)
   :group 's3ed)
 
+(defcustom s3ed-bucket-list '()
+  "Default s3 prefix"
+  :type '(repeat string)
+  :group 's3ed)
+
 (defconst s3ed-app-name "s3ed")
 
 (defun get-s3ed-tmp-s3-dir () (format "%s/%s/%s" s3ed-tmp-s3-dir s3ed-app-name s3ed-profile-name))
