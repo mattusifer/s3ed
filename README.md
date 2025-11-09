@@ -1,3 +1,6 @@
+> ⚠️ Archived — no longer maintained
+> This project is no longer actively developed. Issues and PRs are not being monitored.
+
 # s3ed ![travis-ci](https://travis-ci.org/mattusifer/s3ed.svg?branch=master)
 
 S3ed provides an interface to [Amazon S3](https://aws.amazon.com/s3/) from within Emacs.
